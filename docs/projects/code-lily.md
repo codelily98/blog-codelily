@@ -42,6 +42,8 @@
 
 ## 후속 인수 항목
 
+2026-11-02 추가 동기화: Next.js 개발 모드의 자동 생성 타입 참조(`next-env.d.ts`)를 기록했다. 타입 검사와 diff 공백 검사를 통과했으며, 다음 작업은 아래 외부 연동 인수 항목이다.
+
 - [ ] Google Cloud Web client를 설정하고 `codelily98@gmail.com` 실제 최초 OWNER 가입·로그아웃을 검증한다.
 - [ ] Cloudflare Tunnel/WAF·Caddy DNS-01·R2 bucket/custom domain/CORS를 실제 계정에서 설정한다.
 - [ ] 실제 서버 부하·백업 복원·ACME 갱신·NVDA/VoiceOver 수동 검사를 수행한다.
