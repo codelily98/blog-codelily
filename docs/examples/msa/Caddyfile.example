@@ -1,0 +1,25 @@
+# DNS A/AAAA records for all six subdomains must point to the host.
+# This routes traffic only. Implement authentication and authorization in the apps.
+blog.{$BASE_DOMAIN} {
+    reverse_proxy tech-blog:3000
+}
+
+cv.{$BASE_DOMAIN} {
+    reverse_proxy cv-builder:3000
+}
+
+intro.{$BASE_DOMAIN} {
+    reverse_proxy intro-page:3000
+}
+
+d.{$BASE_DOMAIN} {
+    reverse_proxy service-d:3000
+}
+
+e.{$BASE_DOMAIN} {
+    reverse_proxy service-e:3000
+}
+
+admin.{$BASE_DOMAIN} {
+    reverse_proxy admin-dashboard:3000
+}

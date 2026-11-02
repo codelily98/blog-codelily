@@ -1,0 +1,29 @@
+{
+  "name": "@codelily/code-lily",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --webpack --hostname localhost",
+    "build": "next build --webpack && node ../../scripts/prepare-standalone.mjs",
+    "start": "node .next/standalone/apps/code-lily/server.js"
+  },
+  "dependencies": {
+    "@codelily/ui": "*",
+    "@codelily/editor": "*",
+    "@codelily/charts": "*",
+    "@codelily/grid": "*",
+    "@codelily/content": "*",
+    "@codelily/storage": "*",
+    "@codelily/contracts": "*",
+    "next": "16.4.4",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "better-auth": "1.7.15",
+    "pg": "8.23.1",
+    "kysely": "0.29.8",
+    "zod": "4.6.7",
+    "lucide-react": "1.66.0",
+    "server-only": "0.0.1",
+    "@electric-sql/pglite": "0.5.14"
+  }
+}

@@ -1,0 +1,157 @@
+name: codelily
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  migrate:
+    profiles: [tools]
+    image: ${MIGRATOR_IMAGE:?Set the matching one-off migration image digest}
+    environment:
+      NODE_ENV: production
+      DB_POOL_MAX: "1"
+    env_file: ./env/code-lily-migrator.env
+    command: [npm, run, db:migrate]
+    networks: [data]
+    mem_limit: 512m
+    depends_on:
+      postgres:
+        condition: service_healthy
+    logging: *logging
+
+  maintenance:
+    profiles: [tools]
+    image: ${MIGRATOR_IMAGE:?Set the matching maintenance tool image digest}
+    environment:
+      NODE_ENV: production
+      DB_POOL_MAX: "1"
+    env_file: ./env/code-lily-maintenance.env
+    command: [npm, run, db:maintain]
+    networks: [data]
+    mem_limit: 256m
+    logging: *logging
+
+  tunnel:
+    image: ${CLOUDFLARED_IMAGE:?Set a tested cloudflared image digest}
+    restart: unless-stopped
+    command: [tunnel, --no-autoupdate, run, --token-file, /run/secrets/tunnel_token]
+    secrets: [tunnel_token]
+    mem_limit: 128m
+    cpus: "0.25"
+    networks:
+      tunnel_link:
+        ipv4_address: 172.30.0.2
+      egress:
+    logging: *logging
+
+  caddy:
+    image: ${CADDY_IMAGE:?Set your Caddy image including the cloudflare DNS module}
+    restart: unless-stopped
+    command:
+      - sh
+      - -c
+      - 'export CLOUDFLARE_API_TOKEN="$$(cat /run/secrets/cloudflare_dns_token)"; exec caddy run --config /etc/caddy/Caddyfile --adapter caddyfile'
+    environment:
+      APP_DOMAIN: blog.codelily.kr
+    secrets: [cloudflare_dns_token]
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    mem_limit: 192m
+    cpus: "0.50"
+    networks:
+      tunnel_link:
+        ipv4_address: 172.30.0.3
+      app:
+      egress:
+    logging: *logging
+
+  code-lily:
+    image: ${BLOG_IMAGE:?Set your built code-lily image digest}
+    restart: unless-stopped
+    init: true
+    environment:
+      NODE_ENV: production
+      HOSTNAME: 0.0.0.0
+      PORT: "3000"
+      NODE_OPTIONS: --max-old-space-size=320
+      APP_URL: https://blog.codelily.kr
+      BETTER_AUTH_URL: https://blog.codelily.kr
+    env_file: ./env/code-lily.env
+    mem_limit: 512m
+    cpus: "1.00"
+    pids_limit: 128
+    stop_grace_period: 30s
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    networks: [app, data, egress]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD, node, -e, "fetch('http://127.0.0.1:3000/health/live',{signal:AbortSignal.timeout(1500)}).then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 2s
+      start_period: 30s
+      retries: 3
+    logging: *logging
+
+  postgres:
+    image: ${POSTGRES_IMAGE:?Set a tested PostgreSQL 16 image digest}
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: codelily_production
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD_FILE: /run/secrets/pg_password
+    secrets: [pg_password]
+    command: [postgres, -c, max_connections=60, -c, shared_buffers=256MB, -c, work_mem=4MB, -c, maintenance_work_mem=128MB]
+    mem_limit: 1536m
+    cpus: "1.00"
+    volumes: [pgdata:/var/lib/postgresql/data]
+    networks: [data]
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"']
+      interval: 10s
+      timeout: 3s
+      retries: 10
+    logging: *logging
+
+  redis:
+    profiles: [cache]
+    image: ${REDIS_IMAGE:?Set a tested Redis image digest when using cache profile}
+    restart: unless-stopped
+    command: [redis-server, --maxmemory, 128mb, --maxmemory-policy, allkeys-lru, --save, "", --appendonly, "no", --aclfile, /run/secrets/redis_acl]
+    secrets: [redis_acl]
+    mem_limit: 256m
+    cpus: "0.25"
+    networks: [data]
+    logging: *logging
+
+networks:
+  tunnel_link:
+    internal: true
+    ipam:
+      config: [{subnet: 172.30.0.0/29}]
+  app:
+    internal: true
+  data:
+    internal: true
+  egress:
+
+volumes:
+  pgdata:
+  caddy_data:
+  caddy_config:
+
+secrets:
+  tunnel_token:
+    file: ./secrets/cloudflare-tunnel-token.txt
+  cloudflare_dns_token:
+    file: ./secrets/cloudflare-dns-token.txt
+  pg_password:
+    file: ./secrets/postgres-password.txt
+  redis_acl:
+    file: ./secrets/redis-users.acl

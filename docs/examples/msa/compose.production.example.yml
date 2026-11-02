@@ -1,0 +1,166 @@
+# Design example: supply real images, domains, credentials and implemented apps first.
+# All relative paths below are relative to this file.
+name: codelily
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+x-app: &app
+  restart: unless-stopped
+  init: true
+  mem_limit: 256m
+  cpus: "0.50"
+  pids_limit: 128
+  stop_grace_period: 30s
+  security_opt:
+    - no-new-privileges:true
+  cap_drop:
+    - ALL
+  environment:
+    NODE_ENV: production
+    HOSTNAME: 0.0.0.0
+    PORT: "3000"
+    NODE_OPTIONS: --max-old-space-size=160
+  networks:
+    - ingress
+    - data
+  depends_on:
+    postgres:
+      condition: service_healthy
+  healthcheck:
+    test:
+      - CMD
+      - node
+      - -e
+      - "fetch('http://127.0.0.1:3000/health/live', {signal: AbortSignal.timeout(1500)}).then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
+    interval: 30s
+    timeout: 2s
+    start_period: 30s
+    retries: 3
+  logging: *logging
+
+services:
+  ingress:
+    image: ${INGRESS_IMAGE:?Set a tested Caddy image with digest}
+    restart: unless-stopped
+    mem_limit: 96m
+    cpus: "0.25"
+    environment:
+      BASE_DOMAIN: ${BASE_DOMAIN:?Set your real base domain}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile.example:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - ingress
+    logging: *logging
+
+  postgres:
+    image: ${POSTGRES_IMAGE:?Set a tested PostgreSQL 16 image with digest}
+    restart: unless-stopped
+    mem_limit: 768m
+    cpus: "1.00"
+    environment:
+      POSTGRES_DB: codelily_production
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD_FILE: /run/secrets/pg_bootstrap_password
+    secrets:
+      - pg_bootstrap_password
+    command:
+      - postgres
+      - -c
+      - max_connections=50
+      - -c
+      - shared_buffers=128MB
+      - -c
+      - work_mem=2MB
+      - -c
+      - maintenance_work_mem=64MB
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - data
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"']
+      interval: 10s
+      timeout: 3s
+      retries: 10
+    logging: *logging
+
+  redis:
+    image: ${REDIS_IMAGE:?Set a tested Redis 7 image with digest}
+    restart: unless-stopped
+    mem_limit: 256m
+    cpus: "0.25"
+    command:
+      - redis-server
+      - --maxmemory
+      - 128mb
+      - --maxmemory-policy
+      - allkeys-lru
+      - --save
+      - ""
+      - --appendonly
+      - "no"
+      - --aclfile
+      - /run/secrets/redis_users
+    secrets:
+      - redis_users
+    networks:
+      - data
+    # Optional cache dependency: apps must tolerate unavailable Redis.
+    # Provision a restricted health user before adding an authenticated healthcheck.
+    logging: *logging
+
+  tech-blog:
+    <<: *app
+    image: ${BLOG_IMAGE:?Set a built blog image with digest}
+    env_file: ./env/tech-blog.env
+
+  cv-builder:
+    <<: *app
+    image: ${CV_IMAGE:?Set a built cv image with digest}
+    env_file: ./env/cv-builder.env
+
+  intro-page:
+    <<: *app
+    image: ${INTRO_IMAGE:?Set a built intro image with digest}
+    env_file: ./env/intro-page.env
+
+  service-d:
+    <<: *app
+    image: ${SERVICE_D_IMAGE:?Set a built service-d image with digest}
+    env_file: ./env/service-d.env
+
+  service-e:
+    <<: *app
+    image: ${SERVICE_E_IMAGE:?Set a built service-e image with digest}
+    env_file: ./env/service-e.env
+
+  admin-dashboard:
+    <<: *app
+    image: ${ADMIN_IMAGE:?Set a built admin image with digest}
+    mem_limit: 320m
+    env_file: ./env/admin-dashboard.env
+
+networks:
+  ingress:
+  data:
+    internal: true
+
+volumes:
+  pgdata:
+  caddy_data:
+  caddy_config:
+
+secrets:
+  pg_bootstrap_password:
+    file: ./secrets/pg-bootstrap-password.txt
+  redis_users:
+    file: ./secrets/redis-users.acl

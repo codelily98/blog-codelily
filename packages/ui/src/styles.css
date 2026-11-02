@@ -1,0 +1,220 @@
+@import 'tailwindcss';
+@source "../../../apps/*/src/**/*.{ts,tsx}";
+@source "../../*/src/**/*.{ts,tsx}";
+@custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
+
+:root {
+  color-scheme: light;
+  --cl-font-sans: Arial, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+  --cl-base: #faf9f6;
+  --cl-surface: #f0eeea;
+  --cl-raised: #ffffff;
+  --cl-ink: #24221f;
+  --cl-muted: #67635d;
+  --cl-line: #d8d5cf;
+  --cl-accent: #6c5b32;
+  --cl-danger: #a52431;
+}
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --cl-base: #171614;
+  --cl-surface: #211f1c;
+  --cl-raised: #292622;
+  --cl-ink: #eeece5;
+  --cl-muted: #aaa59b;
+  --cl-line: #36332d;
+  --cl-accent: #dacba9;
+  --cl-danger: #ff9aa4;
+}
+@theme inline {
+  --color-base: var(--cl-base);
+  --color-surface: var(--cl-surface);
+  --color-raised: var(--cl-raised);
+  --color-ink: var(--cl-ink);
+  --color-muted: var(--cl-muted);
+  --color-line: var(--cl-line);
+  --color-accent: var(--cl-accent);
+  --color-danger: var(--cl-danger);
+  --font-sans: var(--cl-font-sans);
+}
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    scroll-padding-top: 6rem;
+  }
+  body {
+    background: var(--cl-base);
+    color: var(--cl-ink);
+    font-family: var(--cl-font-sans);
+    word-break: keep-all;
+    -webkit-font-smoothing: antialiased;
+  }
+  button,
+  input,
+  textarea,
+  select {
+    font: inherit;
+  }
+  button,
+  a,
+  input,
+  select,
+  textarea {
+    touch-action: manipulation;
+  }
+  button {
+    cursor: pointer;
+  }
+  :focus-visible {
+    outline: 2px solid var(--cl-accent);
+    outline-offset: 4px;
+  }
+  ::selection {
+    background: var(--cl-accent);
+    color: var(--cl-base);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      scroll-behavior: auto !important;
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+.content-body {
+  font-size: 1rem;
+  line-height: 1.95;
+  overflow-wrap: anywhere;
+}
+.content-body > :first-child {
+  margin-top: 0;
+}
+.content-body p {
+  margin: 1em 0;
+  color: var(--cl-ink);
+}
+.content-body h1,
+.content-body h2,
+.content-body h3,
+.content-body h4 {
+  font-weight: 700;
+  line-height: 1.4;
+  margin: 1.8em 0 0.7em;
+  letter-spacing: -0.035em;
+}
+.content-body h1 {
+  font-size: 2em;
+}
+.content-body h2 {
+  font-size: 1.5em;
+}
+.content-body h3 {
+  font-size: 1.2em;
+}
+.content-body a {
+  color: var(--cl-accent);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.content-body ul,
+.content-body ol {
+  padding-left: 1.5em;
+  margin: 1em 0;
+}
+.content-body ul {
+  list-style: disc;
+}
+.content-body ol {
+  list-style: decimal;
+}
+.content-body li {
+  margin: 0.4em 0;
+}
+.content-body blockquote {
+  border-left: 3px solid var(--cl-accent);
+  padding: 0.2em 1.2em;
+  margin: 1.5em 0;
+  background: var(--cl-surface);
+}
+.content-body code {
+  background: var(--cl-surface);
+  border: 1px solid var(--cl-line);
+  padding: 0.15em 0.35em;
+  border-radius: 4px;
+  font-size: 0.88em;
+}
+.content-body pre {
+  background: var(--cl-surface);
+  border: 1px solid var(--cl-line);
+  padding: 1.3em;
+  border-radius: 10px;
+  overflow-x: auto;
+  line-height: 1.7;
+  margin: 1.5em 0;
+  max-width: 100%;
+}
+.content-body pre code {
+  border: 0;
+  padding: 0;
+  background: none;
+}
+.content-body img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  margin: 1.5em auto;
+}
+.content-body table {
+  display: block;
+  max-width: 100%;
+  overflow: auto;
+  border-collapse: collapse;
+  margin: 1.5em 0;
+  font-size: 0.9em;
+}
+.content-body td,
+.content-body th {
+  border: 1px solid var(--cl-line);
+  padding: 0.7em 1em;
+  text-align: left;
+}
+.content-body th {
+  background: var(--cl-surface);
+}
+.content-body hr {
+  border-color: var(--cl-line);
+  margin: 2em 0;
+}
+.content-body details {
+  border: 1px solid var(--cl-line);
+  padding: 1em;
+  border-radius: 8px;
+}
+.content-body summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.editor-shell .sun-editor {
+  border-color: var(--cl-line);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.editor-shell .sun-editor .se-wrapper,
+.editor-shell .sun-editor .sun-editor-editable {
+  background: var(--cl-raised);
+  color: var(--cl-ink);
+}
+.editor-shell .sun-editor .se-toolbar,
+.editor-shell .sun-editor .se-resizing-bar {
+  background: var(--cl-surface);
+  border-color: var(--cl-line);
+}
+.editor-shell .sun-editor button {
+  color: var(--cl-ink);
+}
+.editor-shell .sun-editor .se-btn {
+  min-width: 36px;
+  min-height: 36px;
+}

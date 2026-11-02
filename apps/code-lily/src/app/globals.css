@@ -1,0 +1,59 @@
+/* App layout stays small: design primitives and content rules live in @codelily/ui. */
+.page-shell {
+  width: 100%;
+  max-width: 1168px;
+  margin: 0 auto;
+  padding: 64px 24px 0;
+}
+.archive-layout {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  gap: 48px;
+}
+.about-shell {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 64px 24px 0;
+}
+.post-shell {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 56px 24px 0;
+}
+.tabulator {
+  border: 1px solid var(--cl-line) !important;
+  background: var(--cl-base) !important;
+  color: var(--cl-ink) !important;
+  font-size: 13px;
+}
+.tabulator .tabulator-header,
+.tabulator .tabulator-header .tabulator-col,
+.tabulator .tabulator-footer {
+  background: var(--cl-surface) !important;
+  color: var(--cl-ink) !important;
+  border-color: var(--cl-line) !important;
+}
+.tabulator-row,
+.tabulator-row.tabulator-row-even {
+  background: var(--cl-base) !important;
+  color: var(--cl-ink) !important;
+}
+.tabulator-row.tabulator-selectable:hover {
+  background: var(--cl-surface) !important;
+}
+.tabulator-cell {
+  border-color: var(--cl-line) !important;
+}
+@media (max-width: 767px) {
+  .page-shell,
+  .about-shell {
+    padding-top: 32px;
+  }
+  .archive-layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 32px;
+  }
+  .post-shell {
+    padding-top: 32px;
+  }
+}

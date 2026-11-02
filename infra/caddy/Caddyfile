@@ -1,0 +1,30 @@
+{
+    # Only the dedicated connector address may supply the real client IP header.
+    servers {
+        trusted_proxies static 172.30.0.2/32
+        trusted_proxies_strict
+        client_ip_headers CF-Connecting-IP
+    }
+}
+
+{$APP_DOMAIN} {
+    tls {
+        dns cloudflare {env.CLOUDFLARE_API_TOKEN}
+        resolvers 1.1.1.1 1.0.0.1
+    }
+    encode zstd gzip
+    request_body {
+        max_size 1MB
+    }
+    @internal path /api/internal/*
+    respond @internal 404
+    reverse_proxy code-lily:3000 {
+        header_up X-Forwarded-For {client_ip}
+    }
+    header {
+        X-Content-Type-Options nosniff
+        Referrer-Policy strict-origin-when-cross-origin
+        X-Frame-Options DENY
+        -Server
+    }
+}

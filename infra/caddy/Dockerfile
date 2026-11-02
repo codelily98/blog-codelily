@@ -1,0 +1,8 @@
+ARG CADDY_BUILDER_IMAGE
+ARG CADDY_RUNTIME_IMAGE
+FROM ${CADDY_BUILDER_IMAGE} AS builder
+ARG CADDY_VERSION
+ARG CF_DNS_MODULE_VERSION
+RUN test -n "$CADDY_VERSION" && test -n "$CF_DNS_MODULE_VERSION" && xcaddy build "$CADDY_VERSION" --with "github.com/caddy-dns/cloudflare@$CF_DNS_MODULE_VERSION"
+FROM ${CADDY_RUNTIME_IMAGE}
+COPY --from=builder /usr/bin/caddy /usr/bin/caddy

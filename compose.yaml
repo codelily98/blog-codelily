@@ -1,0 +1,80 @@
+name: codelily-local
+services:
+  code-lily:
+    profiles: [web]
+    image: codelily/code-lily:local
+    build:
+      context: .
+      dockerfile: infra/Dockerfile
+      target: runtime
+      args:
+        NODE_IMAGE: ${LOCAL_NODE_IMAGE:-node:24-bookworm-slim}
+    env_file: ./.local/web.env
+    environment:
+      NODE_ENV: production
+      HOSTNAME: 0.0.0.0
+      PORT: "3000"
+      NODE_OPTIONS: --max-old-space-size=320
+    ports: ["127.0.0.1:3000:3000"]
+    mem_limit: 512m
+    init: true
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD, node, -e, "fetch('http://127.0.0.1:3000/health/live').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+    logging:
+      driver: json-file
+      options: {max-size: "10m", max-file: "3"}
+  postgres:
+    image: postgres:16-alpine@sha256:0cefaabd882e42bcb2a2f3dc56d3ce4770560ba62fd7f197f1a2e008fd5731ab
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: codelily_production
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+    secrets: [postgres_password, runtime_password, migrator_password]
+    volumes:
+      - local_pgdata:/var/lib/postgresql/data
+      - ./infra/postgres/local-init.sh:/docker-entrypoint-initdb.d/10-codelily.sh:ro
+    ports: ["127.0.0.1:55432:5432"]
+    mem_limit: 768m
+    cpus: "1.00"
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U postgres -d codelily_production']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    logging: &logging
+      driver: json-file
+      options: {max-size: "10m", max-file: "3"}
+  redis:
+    image: redis:7-alpine@sha256:8da19c7399dca900c6822a1cf30f9d2285585e2c4b457ff4095b0f4500054d3f
+    restart: unless-stopped
+    command: [redis-server, --maxmemory, 128mb, --maxmemory-policy, allkeys-lru, --save, "", --appendonly, "no", --aclfile, /run/secrets/redis_acl]
+    secrets: [redis_acl, redis_password]
+    ports: ["127.0.0.1:56379:6379"]
+    mem_limit: 256m
+    cpus: "0.25"
+    healthcheck:
+      test: [CMD-SHELL, 'REDISCLI_AUTH="$$(cat /run/secrets/redis_password)" redis-cli --user code_lily ping | grep -q PONG']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    logging: *logging
+volumes:
+  local_pgdata:
+secrets:
+  postgres_password:
+    file: ./.local/secrets/postgres-password.txt
+  runtime_password:
+    file: ./.local/secrets/runtime-password.txt
+  migrator_password:
+    file: ./.local/secrets/migrator-password.txt
+  redis_password:
+    file: ./.local/secrets/redis-password.txt
+  redis_acl:
+    file: ./.local/secrets/redis-users.acl
