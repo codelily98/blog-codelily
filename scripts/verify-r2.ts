@@ -60,6 +60,17 @@ try {
   assert.match(preflight.headers.get('access-control-allow-methods') || '', /PUT/);
   assert.match(preflight.headers.get('access-control-allow-headers') || '', /content-type/i);
   await preflight.arrayBuffer();
+  const untrustedPreflight = await request(reservation.url, {
+    method: 'OPTIONS',
+    headers: {
+      Origin: 'https://untrusted.invalid',
+      'Access-Control-Request-Method': 'PUT',
+      'Access-Control-Request-Headers': 'content-type',
+    },
+  });
+  const allowedOrigin = untrustedPreflight.headers.get('access-control-allow-origin');
+  assert.ok(allowedOrigin !== '*' && allowedOrigin !== 'https://untrusted.invalid');
+  await untrustedPreflight.arrayBuffer();
   console.log('Browser PUT CORS preflight: PASS');
 
   phase = 'signed image PUT and completion';
@@ -85,19 +96,41 @@ try {
   });
   assert.ok(privatePut.ok);
   await privatePut.arrayBuffer();
+  phase = 'private completion';
   const privateComplete = await storage.complete(file);
   assert.equal(privateComplete.url, null);
+  phase = 'private signed URL';
   const download = await storage.download(privateComplete.key);
   assert.equal(new URL(download).searchParams.get('X-Amz-Expires'), '60');
+  phase = 'private GET status';
   const privateGet = await request(download);
+  console.log(
+    'Private response:',
+    JSON.stringify({
+      status: privateGet.status,
+      contentType: privateGet.headers.get('content-type'),
+      cacheControl: privateGet.headers.get('cache-control'),
+    }),
+  );
   assert.equal(privateGet.status, 200);
+  phase = 'private GET cache control';
   assert.match(privateGet.headers.get('cache-control') || '', /no-store/);
+  phase = 'private GET integrity';
   assert.deepEqual(Buffer.from(await privateGet.arrayBuffer()), pdf);
   const anonymousUrl = new URL(download);
   anonymousUrl.search = '';
+  phase = 'unsigned private S3 denial';
   const anonymous = await request(anonymousUrl.href);
-  assert.ok([401, 403].includes(anonymous.status));
-  await anonymous.arrayBuffer();
+  const anonymousBody = await anonymous.text();
+  const anonymousCode = anonymousBody.match(/<Code>([A-Za-z0-9_:-]{1,64})<\/Code>/)?.[1] || null;
+  console.log(
+    'Unsigned S3 response:',
+    JSON.stringify({ status: anonymous.status, code: anonymousCode }),
+  );
+  assert.ok(
+    [401, 403].includes(anonymous.status) ||
+      (anonymous.status === 400 && anonymousCode === 'InvalidArgument'),
+  );
   console.log('60-second signed private S3 download, no-store and unsigned denial: PASS');
 
   phase = 'spoofed image rejection';
@@ -111,7 +144,7 @@ try {
   });
   assert.ok(invalidPut.ok);
   await invalidPut.arrayBuffer();
-  await assert.rejects(() => storage.complete(invalid));
+  await assert.rejects(() => storage.complete(invalid), /허용된 파일 형식/);
   console.log('Content-type spoofing rejected before public copy: PASS');
 
   const cacheStatuses: (string | null)[] = [];

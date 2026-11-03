@@ -21,6 +21,8 @@
 
 ## 다음 시작점·기록
 
+2026-11-03 후속: 실제 R2에서 서명 PUT·허용 Origin CORS·공개 복사/바이트 일치·서명 비공개 GET/no-store·익명 접근 거부·위장 파일 거절 통과. storage 보완 이미지도 운영 반영했다. 최신 도구의 비허용 Origin·정확한 형식 오류 조건과 공개 CDN HIT는 Cache Rule 배포 후 함께 검증한다. Google 에디터 실제 브라우저 전송과 두 번째 앱 재사용은 별도 대기다.
+
 2026-11-03: 공통 R2 presigner의 빈 본문 CRC32 문제를 재현·보완하고 type/length 서명과 public/private bucket 분리를 검증했다. 전체 테스트 7개·타입·경계 통과. 실제 계정 검증은 [R2 연동 절차](../operations/R2-연동.md)를 따라 키/CORS 등록 후 수행한다.
 
 2026-11-02: 공통 UI·편집·콘텐츠·Chart/Grid를 code-lily에서 실제 사용했다. SunEditor 도구 이름, Chart canvas 이름, Tabulator ARIA 구조와 키보드 정렬을 wrapper에서 보완했다. 기본 표/대화형 Grid 양쪽 자동 접근성 검사 통과. 후속 작업은 공통 패키지를 복사하지 않고 workspace dependency로 추가한다.
