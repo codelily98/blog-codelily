@@ -53,6 +53,8 @@ ISR 재검증과 CDN purge는 서로 다른 작업이다. 비공개 전환 시 �
 
 ## 4. R2 설정
 
+실제 리소스와 실행 순서는 [R2 연동 절차](R2-연동.md)를 따른다. 비공개 `blog-storage`, 공개 `public-blog-storage`, 공개 도메인 `public-blog-r2.codelily.kr`가 현재 설정 대상이다. 아래의 media 도메인 표기는 범용 예시다.
+
 1. public 이미지 bucket과 private 파일/staging bucket을 별도로 만든다. private bucket의 public access와 r2.dev 공개 주소를 끈다.
 2. public bucket에 `media.codelily.kr` 같은 custom domain을 연결한다. production에서 r2.dev를 CDN 대체로 사용하지 않는다.
 3. 두 bucket에 필요한 object read/write만 가진 R2 API 자격증명을 서버 환경변수에 둔다. 클라이언트에 R2 key를 제공하지 않는다.
@@ -69,6 +71,6 @@ ISR 재검증과 CDN purge는 서로 다른 작업이다. 비공개 전환 시 �
 - Caddy 인증서 hostname·신뢰·만료와 volume 유지·재시작 후 복원을 확인한다. 자동 갱신은 장기 관측 또는 staging 갱신 연습으로 검증한다.
 - 정적 파일·공개 이미지의 `CF-Cache-Status`와 `Age`, 비공개 경로의 bypass를 실제 응답으로 확인한다.
 - R2 presigned PUT→완료→공개 CDN 조회, private 권한부 GET, 잘못된 크기/형식/다른 소유자 거절을 확인한다.
-- 백업을 다른 환경으로 복원하고 글·회원·파일 참조까지 검증한다. Tunnel/DNS/R2는 현재 계정 자격증명이 없어 미검증이다.
+- 백업을 다른 환경으로 복원하고 글·회원·파일 참조까지 검증한다. Tunnel/DNS 검증 결과는 진행현황에 기록했고 R2·외부 백업 인수는 별도로 남아 있다.
 
 근거: [Tunnel 원본 TLS 설정](https://developers.cloudflare.com/cloudflare-one/networks/connectors/cloudflare-tunnel/configure-tunnels/origin-parameters/), [Full strict](https://developers.cloudflare.com/ssl/origin-configuration/ssl-modes/full-strict/), [Caddy Cloudflare module](https://github.com/caddy-dns/cloudflare), [R2 서명 URL](https://developers.cloudflare.com/r2/api/s3/presigned-urls/), [R2 CORS](https://developers.cloudflare.com/r2/buckets/cors/), [Cache Rules](https://developers.cloudflare.com/cache/how-to/cache-rules/settings/).

@@ -64,12 +64,19 @@ export function matchesSignature(bytes: Uint8Array, type: string) {
 export class R2Storage {
   private client: S3Client;
   constructor(private config: StorageConfig) {
+    const bucketName = /^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$/;
+    if (!bucketName.test(config.publicBucket) || !bucketName.test(config.privateBucket))
+      throw new Error('Use R2 bucket names, not custom domains.');
+    if (config.publicBucket === config.privateBucket)
+      throw new Error('Public images and private uploads require separate buckets.');
     if (!/^https:\/\//.test(config.publicBaseUrl))
       throw new Error('R2 public domain must use HTTPS.');
     this.client = new S3Client({
       region: 'auto',
       endpoint: `https://${config.accountId}.r2.cloudflarestorage.com`,
       credentials: { accessKeyId: config.accessKeyId, secretAccessKey: config.secretAccessKey },
+      // The browser sends the body after signing; no body checksum can be calculated here.
+      requestChecksumCalculation: 'WHEN_REQUIRED',
     });
   }
   async reserve(input: FileReservation) {
@@ -82,7 +89,7 @@ export class R2Storage {
         ContentType: input.contentType,
         ContentLength: input.size,
       }),
-      { expiresIn: 300 },
+      { expiresIn: 300, signableHeaders: new Set(['content-type']) },
     );
     return { key, url, expiresIn: 300 };
   }
