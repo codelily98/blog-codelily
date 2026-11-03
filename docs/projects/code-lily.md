@@ -37,6 +37,8 @@
 
 ## 다음 시작점
 
+2026-11-03 최신: Cloudflare token 검증, 실제 Let's Encrypt DNS-01 인증서 발급·원본 TLS 검증·재시작 복원, cloudflared QUIC 4개 연결까지 완료했다. 새 published application route를 사용자에게 요청했으며 `blog`의 외부 접속은 아직 미검증이다. 경로 저장 후 DNS/CDN/브라우저, Google/R2/WAF/백업 인수를 이어간다.
+
 2026-11-03: Ubuntu 26.04 iwinv [최초 배포 실행서](../operations/iwinv-최초배포.md), 운영 비밀 설정 생성 도구, 새 DB 3개 역할 초기화와 migration 후 권한 SQL, Redis healthcheck를 준비했다. 로컬 실제 PostgreSQL/Redis와 Linux 파일 권한 검증을 통과했다. 실제 SSH 접속·Docker Engine 29.9.2/Compose 5.7.0 설치·이미지 pull·NTS 시간 동기화 복구까지 완료했다. DB·앱·신규 Tunnel·Google/R2 인수는 이어서 진행하며 기존 `naraebi`를 유지한다.
 
 같은 날 후속: 개발 PC 빌드 이미지를 해시 검증 후 서버에 로드했고 앱·DB·Redis가 모두 healthy다. 실서버 migration/maintenance/readiness·공개 HTTP/ISR 헤더를 확인했다. 외부 포트는 공개하지 않았으며 Cloudflare token·실 인증서·Tunnel·Google/R2·백업은 아직 대기다. 초기 save/SCP/load 배포 명세는 `infra/releases/2026-11-03-bootstrap.json`이다.

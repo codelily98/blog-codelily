@@ -1,6 +1,6 @@
 # Cloudflare Tunnel · WAF · Caddy · R2 운영
 
-대상: `blog.codelily.kr`, iwinv `hpa_2.8-g2`. 서버 Docker 설치는 완료했으며 Cloudflare 계정·DNS 변경은 아직 실행하지 않았다. 실제 배포 상태는 진행현황을 따른다.
+대상: `blog.codelily.kr`, iwinv `hpa_2.8-g2`. 서버 Docker 설치·Caddy 실제 DNS-01 발급·Tunnel QUIC 연결은 검증했다. 공개 hostname 경로 저장과 외부 인수 상태는 진행현황을 따른다. 기존 `naraebi` 설정은 유지한다.
 
 신규 Ubuntu 26.04 LTS 서버의 설치·이미지 준비·비밀 설정·기동 순서는 [iwinv 최초 배포](iwinv-최초배포.md)를 따른다. 가비아 등록/Cloudflare 네임서버 위임은 완료되어 있으며, 기존 `naraebi.codelily.kr` 운영을 유지한 채 `blog`만 새 Tunnel로 연결한다.
 
@@ -37,6 +37,8 @@ Tunnel 채택으로 이전의 “blog A 레코드 → 서버 공개 IP / 80·443
 9. `/manage*`, 인증·쓰기 API에 적절한 속도 제한을 두되 Google callback과 공유 NAT 사용자를 과하게 제한하지 않는다. Access로 전체 블로그를 막으면 일반 Google 로그인 요구와 충돌하므로 별도 admin 앱에만 선택적으로 적용한다.
 
 `infra/compose.production.yml`은 host port를 한 개도 공개하지 않는다. `172.30.0.0/29`는 예시 connector 전용 네트워크다. 기존 네트워크와 충돌하면 subnet·고정 주소·Caddy trusted proxy를 함께 바꾼다. 앱은 전용 connector에서 온 `CF-Connecting-IP`만 Caddy를 통해 전달받는다. CF 헤더의 존재만으로 사용자나 관리자를 인증하지 않는다.
+
+Tunnel과 Caddy의 outbound 네트워크는 각각 `tunnel_egress`/`caddy_egress`로 분리한다. 둘이 egress까지 공유하면 Docker DNS가 `caddy`를 egress IP로 해석해 전용 trusted proxy 경로를 벗어날 수 있다. 실서버에서 이 현상을 확인했으므로 공통 네트워크는 `tunnel_link`만 유지하고, connector namespace에서 `caddy`가 전용 주소로 해석되는지 검증한다.
 
 ## 3. CDN과 ISR
 
