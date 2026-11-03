@@ -93,7 +93,7 @@ Linux/macOS는 `CODELILY_AUTH_FIXTURE=1 npm run test:e2e`를 사용합니다. �
 
 ## 운영
 
-[Cloudflare·Caddy·R2 운영 지침](docs/operations/Cloudflare-Caddy-R2.md), [배포·복구](docs/operations/배포-복구.md), [접근성 검증](docs/quality/접근성-검증.md)을 따릅니다. 현재 외부 서버·DNS·OAuth·R2에는 변경하지 않았습니다.
+[iwinv Ubuntu 26.04 최초 배포](docs/operations/iwinv-최초배포.md), [Cloudflare·Caddy·R2 운영 지침](docs/operations/Cloudflare-Caddy-R2.md), [배포·복구](docs/operations/배포-복구.md), [접근성 검증](docs/quality/접근성-검증.md)을 따릅니다. 서버 Docker 설치·시간 동기화는 완료했으며 DNS·OAuth·R2와 전체 배포 인수 상태는 [진행현황](docs/진행현황.md)을 확인합니다.
 
 공개 Posts·상세·About은 ISR 300초와 저장 후 경로 재검증을 사용합니다. 정적 자산과 R2 공개 이미지는 Cloudflare CDN으로 전달하고 회원·관리 응답은 no-store로 처리합니다. 운영은 실제 PostgreSQL만 허용하며 빌드는 CI에서 수행합니다.
 

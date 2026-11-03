@@ -37,6 +37,8 @@
 
 ## 다음 시작점
 
+2026-11-03: Ubuntu 26.04 iwinv [최초 배포 실행서](../operations/iwinv-최초배포.md), 운영 비밀 설정 생성 도구, 새 DB 3개 역할 초기화와 migration 후 권한 SQL, Redis healthcheck를 준비했다. 로컬 실제 PostgreSQL/Redis와 Linux 파일 권한 검증을 통과했다. 실제 SSH 접속·Docker Engine 29.9.2/Compose 5.7.0 설치·이미지 pull·NTS 시간 동기화 복구까지 완료했다. DB·앱·신규 Tunnel·Google/R2 인수는 이어서 진행하며 기존 `naraebi`를 유지한다.
+
 2026-11-02: Windows standalone·Linux Docker 빌드, 타입·모듈 경계, 단위/SQL 통합 4개, 실제 Chrome 브라우저 5개를 검증했다. HTML 소스 보기의 최신 값 저장·안전한 스타일 보존, GFM 표, OWNER 게시/수정/공개 해제, MEMBER 댓글, About 개별 항목, Chart/Grid, 키보드 모달·테마·모바일·ISR HIT를 확인했다. 실제 Google 제공자 인증 왕복과 R2·운영 Cloudflare는 별도 대기다. 운영 OAuth·R2·DNS는 설정값 없이 성공 처리하지 않는다.
 
 

@@ -106,11 +106,14 @@ services:
       POSTGRES_DB: codelily_production
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD_FILE: /run/secrets/pg_password
-    secrets: [pg_password]
+    secrets: [pg_password, runtime_password, migrator_password, maintenance_password]
     command: [postgres, -c, max_connections=60, -c, shared_buffers=256MB, -c, work_mem=4MB, -c, maintenance_work_mem=128MB]
     mem_limit: 1536m
     cpus: "1.00"
-    volumes: [pgdata:/var/lib/postgresql/data]
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./postgres/local-init.sh:/docker-entrypoint-initdb.d/10-codelily.sh:ro
+      - ./postgres/production-init.sh:/docker-entrypoint-initdb.d/20-maintenance.sh:ro
     networks: [data]
     healthcheck:
       test: [CMD-SHELL, 'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"']
@@ -124,10 +127,15 @@ services:
     image: ${REDIS_IMAGE:?Set a tested Redis image digest when using cache profile}
     restart: unless-stopped
     command: [redis-server, --maxmemory, 128mb, --maxmemory-policy, allkeys-lru, --save, "", --appendonly, "no", --aclfile, /run/secrets/redis_acl]
-    secrets: [redis_acl]
+    secrets: [redis_acl, redis_password]
     mem_limit: 256m
     cpus: "0.25"
     networks: [data]
+    healthcheck:
+      test: [CMD-SHELL, 'REDISCLI_AUTH="$$(cat /run/secrets/redis_password)" redis-cli --user code_lily ping | grep -q PONG']
+      interval: 10s
+      timeout: 3s
+      retries: 5
     logging: *logging
 
 networks:
@@ -153,5 +161,13 @@ secrets:
     file: ./secrets/cloudflare-dns-token.txt
   pg_password:
     file: ./secrets/postgres-password.txt
+  runtime_password:
+    file: ./secrets/runtime-password.txt
+  migrator_password:
+    file: ./secrets/migrator-password.txt
+  maintenance_password:
+    file: ./secrets/maintenance-password.txt
   redis_acl:
     file: ./secrets/redis-users.acl
+  redis_password:
+    file: ./secrets/redis-password.txt

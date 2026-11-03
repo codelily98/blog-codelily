@@ -1,6 +1,8 @@
 # Cloudflare Tunnel · WAF · Caddy · R2 운영
 
-대상: `blog.codelily.kr`, iwinv `hpa_2.8-g2`. 계정·서버 변경은 아직 실행하지 않았다.
+대상: `blog.codelily.kr`, iwinv `hpa_2.8-g2`. 서버 Docker 설치는 완료했으며 Cloudflare 계정·DNS 변경은 아직 실행하지 않았다. 실제 배포 상태는 진행현황을 따른다.
+
+신규 Ubuntu 26.04 LTS 서버의 설치·이미지 준비·비밀 설정·기동 순서는 [iwinv 최초 배포](iwinv-최초배포.md)를 따른다. 가비아 등록/Cloudflare 네임서버 위임은 완료되어 있으며, 기존 `naraebi.codelily.kr` 운영을 유지한 채 `blog`만 새 Tunnel로 연결한다.
 
 ## 1. 연결 구조
 
@@ -24,10 +26,10 @@ Tunnel 채택으로 이전의 “blog A 레코드 → 서버 공개 IP / 80·443
 
 ## 2. Cloudflare 설정 순서
 
-1. `codelily.kr` zone을 Cloudflare DNS에서 관리하는지 확인한다. 필요하면 등록기관에서 Cloudflare nameserver로 변경하고 전파를 확인한다.
+1. `codelily.kr` zone의 기존 DNS와 `naraebi` 운영을 확인한다. 이미 완료된 nameserver 위임은 다시 변경하지 않는다. 새 규칙은 `http.host eq "blog.codelily.kr"` 조건으로 한정한다.
 2. Cloudflare One에서 remotely-managed Tunnel을 만든다. connector token을 `infra/secrets/cloudflare-tunnel-token.txt`에 저장하고 채팅·Git·로그에 남기지 않는다.
 3. public hostname을 `blog.codelily.kr`, 원본 service를 `https://caddy:443`으로 지정한다. TLS `Origin Server Name`은 `blog.codelily.kr`, 인증서 검증은 켠다. `noTLSVerify`로 인증서 오류를 숨기지 않는다. Docker의 `caddy` 이름은 connector가 접속할 네트워크 이름이다.
-4. Cloudflare SSL/TLS는 `Full (strict)`로 설정한다. 인증서 미발급 초기에는 Tunnel 경유 요청이 실패할 수 있으므로 Caddy DNS-01 발급을 먼저 확인한다.
+4. Tunnel 원본의 `Origin Server Name`과 HTTP Host Header를 `blog.codelily.kr`로 지정하고 인증서 검증을 켠다. zone 전체 SSL/TLS를 `Full (strict)`로 변경할 때는 기존 `naraebi`의 호환성을 먼저 검증한다. Tunnel 원본 TLS는 별도 설정이므로 이 작업을 위해 zone 전체 모드를 바꾸지 않는다. 인증서 미발급 초기에는 Tunnel 경유 요청이 실패할 수 있으므로 Caddy DNS-01 발급을 먼저 확인한다.
 5. zone별 `Zone:DNS:Edit`와 필요한 zone 조회 권한만 가진 DNS API token을 만들고 `infra/secrets/cloudflare-dns-token.txt`에 저장한다. Global API Key를 사용하지 않는다.
 6. Caddy는 DNS module이 포함된 자체 이미지를 빌드한다. builder/runtime 이미지 digest와 Caddy/module 버전을 고정한다. ACME는 외부 80 포트 대신 DNS TXT challenge를 사용한다.
 7. `caddy_data`·`caddy_config` volume을 유지하고 인증서 만료·갱신 실패를 감시한다. 정상 로그·외부 HTTPS 인증서·Tunnel 원본 TLS 검증 성공을 함께 확인한다. 운영 전 ACME staging에서 DNS 권한·발급 흐름을 먼저 검증한다.
@@ -67,4 +69,4 @@ ISR 재검증과 CDN purge는 서로 다른 작업이다. 비공개 전환 시 �
 - R2 presigned PUT→완료→공개 CDN 조회, private 권한부 GET, 잘못된 크기/형식/다른 소유자 거절을 확인한다.
 - 백업을 다른 환경으로 복원하고 글·회원·파일 참조까지 검증한다. Tunnel/DNS/R2는 현재 계정 자격증명이 없어 미검증이다.
 
-근거: [Tunnel 원본 TLS 설정](https://developers.cloudflare.com/cloudflare-one/networks/connectors/cloudflare-tunnel/configure-tunnels/origin-configuration/), [Full strict](https://developers.cloudflare.com/ssl/origin-configuration/ssl-modes/full-strict/), [Caddy Cloudflare module](https://github.com/caddy-dns/cloudflare), [R2 서명 URL](https://developers.cloudflare.com/r2/api/s3/presigned-urls/), [R2 CORS](https://developers.cloudflare.com/r2/buckets/cors/), [Cache Rules](https://developers.cloudflare.com/cache/how-to/cache-rules/settings/).
+근거: [Tunnel 원본 TLS 설정](https://developers.cloudflare.com/cloudflare-one/networks/connectors/cloudflare-tunnel/configure-tunnels/origin-parameters/), [Full strict](https://developers.cloudflare.com/ssl/origin-configuration/ssl-modes/full-strict/), [Caddy Cloudflare module](https://github.com/caddy-dns/cloudflare), [R2 서명 URL](https://developers.cloudflare.com/r2/api/s3/presigned-urls/), [R2 CORS](https://developers.cloudflare.com/r2/buckets/cors/), [Cache Rules](https://developers.cloudflare.com/cache/how-to/cache-rules/settings/).
