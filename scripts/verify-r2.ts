@@ -74,19 +74,6 @@ try {
   assert.equal(complete.url, `${publicBase.replace(/\/$/, '')}/objects/${image.id}`);
   console.log('Signed PUT, HEAD/signature/ETag validation and cross-bucket publication: PASS');
 
-  phase = 'public CDN';
-  const cacheStatuses: (string | null)[] = [];
-  for (let attempt = 0; attempt < 3; attempt++) {
-    const publicResponse = await request(complete.url!);
-    assert.equal(publicResponse.status, 200);
-    assert.equal(publicResponse.headers.get('content-type'), 'image/png');
-    assert.match(publicResponse.headers.get('cache-control') || '', /max-age=31536000/);
-    assert.deepEqual(Buffer.from(await publicResponse.arrayBuffer()), png);
-    cacheStatuses.push(publicResponse.headers.get('cf-cache-status'));
-    if (cacheStatuses.at(-1) === 'HIT') break;
-  }
-  console.log('Public image integrity: PASS; CDN states:', JSON.stringify(cacheStatuses));
-
   phase = 'private download';
   const pdf = Buffer.from('%PDF-1.7\n% isolated storage verification fixture\n%%EOF\n');
   const file = fixture(false, 'application/pdf', pdf);
@@ -126,6 +113,32 @@ try {
   await invalidPut.arrayBuffer();
   await assert.rejects(() => storage.complete(invalid));
   console.log('Content-type spoofing rejected before public copy: PASS');
+
+  const cacheStatuses: (string | null)[] = [];
+  for (let attempt = 0; attempt < 3; attempt++) {
+    phase = 'public CDN status';
+    const publicResponse = await request(complete.url!);
+    console.log(
+      'Public response:',
+      JSON.stringify({
+        status: publicResponse.status,
+        contentType: publicResponse.headers.get('content-type'),
+        cacheControl: publicResponse.headers.get('cache-control'),
+        cdn: publicResponse.headers.get('cf-cache-status'),
+        age: publicResponse.headers.get('age'),
+      }),
+    );
+    assert.equal(publicResponse.status, 200);
+    phase = 'public CDN content type';
+    assert.equal(publicResponse.headers.get('content-type'), 'image/png');
+    phase = 'public CDN cache control';
+    assert.match(publicResponse.headers.get('cache-control') || '', /max-age=31536000/);
+    phase = 'public CDN image integrity';
+    assert.deepEqual(Buffer.from(await publicResponse.arrayBuffer()), png);
+    cacheStatuses.push(publicResponse.headers.get('cf-cache-status'));
+    if (cacheStatuses.at(-1) === 'HIT') break;
+  }
+  console.log('Public image integrity: PASS; CDN states:', JSON.stringify(cacheStatuses));
   if (process.env.R2_VERIFY_CDN === '1') {
     phase = 'CDN HIT requirement';
     assert.ok(cacheStatuses.includes('HIT'));
