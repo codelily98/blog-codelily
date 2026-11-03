@@ -1,0 +1,19 @@
+{
+  "sourceCommit": "dde7621e1627dddf355c20fde37fb35c6b25b154",
+  "platform": "linux/amd64",
+  "delivery": "docker-save-scp-load",
+  "stateAtRecording": "loaded-not-activated-awaiting-S3-verification",
+  "images": {
+    "blog": "sha256:38893483f948b24f6a6bd6a9359fd3a4cf5462e270b18cad7bbe69a349ba19ef",
+    "migrator": "sha256:3335738758643036c29e1c042e1942eb28e7427df22b8c59345ebaafc9715d48"
+  },
+  "unchangedImagesReference": "2026-11-03-bootstrap.json",
+  "archiveSha256": {
+    "codelily-r2-dde7621.tar": "714a82a1ae89bdd41eb6b27f593b3b7da33faa984473ad06e77e5cb4b1a4540a"
+  },
+  "target": {
+    "privateBucket": "blog-storage",
+    "publicBucket": "public-blog-storage",
+    "publicBaseUrl": "https://public-blog-r2.codelily.kr"
+  }
+}
