@@ -75,6 +75,8 @@ export class R2Storage {
       region: 'auto',
       endpoint: `https://${config.accountId}.r2.cloudflarestorage.com`,
       credentials: { accessKeyId: config.accessKeyId, secretAccessKey: config.secretAccessKey },
+      maxAttempts: 2,
+      requestHandler: { connectionTimeout: 3000, requestTimeout: 10000 },
       // The browser sends the body after signing; no body checksum can be calculated here.
       requestChecksumCalculation: 'WHEN_REQUIRED',
     });
