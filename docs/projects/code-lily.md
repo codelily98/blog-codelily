@@ -37,7 +37,7 @@
 
 ## 다음 시작점
 
-2026-11-03 최신: Cloudflare token 검증, 실제 Let's Encrypt DNS-01 인증서 발급·원본 TLS 검증·재시작 복원, cloudflared QUIC 4개 연결까지 완료했다. 새 published application route를 사용자에게 요청했으며 `blog`의 외부 접속은 아직 미검증이다. 경로 저장 후 DNS/CDN/브라우저, Google/R2/WAF/백업 인수를 이어간다.
+2026-11-03 최신: Cloudflare token·DNS/hostname·실제 DNS-01 인증서·원본 TLS/복원·QUIC를 검증했다. 운영 도메인의 개발 PC/HKG 경로와 Chrome desktop/mobile UI·자동 접근성·CDN/private 응답은 통과했다. 서버 자체 SJC 경로의 502는 미해결이므로 [진단 기록](../operations/Cloudflare-502-진단.md)부터 재개한다. Google/R2/WAF/백업·자동 갱신 관측·수동 접근성 인수는 대기다. 운영 게시글은 아직 0개다.
 
 2026-11-03: Ubuntu 26.04 iwinv [최초 배포 실행서](../operations/iwinv-최초배포.md), 운영 비밀 설정 생성 도구, 새 DB 3개 역할 초기화와 migration 후 권한 SQL, Redis healthcheck를 준비했다. 로컬 실제 PostgreSQL/Redis와 Linux 파일 권한 검증을 통과했다. 실제 SSH 접속·Docker Engine 29.9.2/Compose 5.7.0 설치·이미지 pull·NTS 시간 동기화 복구까지 완료했다. DB·앱·신규 Tunnel·Google/R2 인수는 이어서 진행하며 기존 `naraebi`를 유지한다.
 

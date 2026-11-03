@@ -1,6 +1,6 @@
 # Cloudflare Tunnel · WAF · Caddy · R2 운영
 
-대상: `blog.codelily.kr`, iwinv `hpa_2.8-g2`. 서버 Docker 설치·Caddy 실제 DNS-01 발급·Tunnel QUIC 연결은 검증했다. 공개 hostname 경로 저장과 외부 인수 상태는 진행현황을 따른다. 기존 `naraebi` 설정은 유지한다.
+대상: `blog.codelily.kr`, iwinv `hpa_2.8-g2`. DNS-01·Tunnel·공개 hostname과 개발 PC의 HTTPS/CDN/브라우저 검증은 통과했다. 서버 자체 SJC 경로의 502는 [진단 중](Cloudflare-502-진단.md)이며 전체 인수 완료는 아니다. 기존 `naraebi` 설정은 유지한다.
 
 신규 Ubuntu 26.04 LTS 서버의 설치·이미지 준비·비밀 설정·기동 순서는 [iwinv 최초 배포](iwinv-최초배포.md)를 따른다. 가비아 등록/Cloudflare 네임서버 위임은 완료되어 있으며, 기존 `naraebi.codelily.kr` 운영을 유지한 채 `blog`만 새 Tunnel로 연결한다.
 
