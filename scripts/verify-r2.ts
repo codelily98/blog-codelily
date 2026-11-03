@@ -20,7 +20,7 @@ const client = new S3Client({
   },
   requestChecksumCalculation: 'WHEN_REQUIRED',
   maxAttempts: 2,
-  requestHandler: { connectionTimeout: 3000, requestTimeout: 10000 },
+  requestHandler: { connectionTimeout: 3000, requestTimeout: 10000, throwOnRequestTimeout: true },
 });
 const created: { Bucket: string; Key: string }[] = [];
 let phase = 'configuration';
