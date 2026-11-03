@@ -24,8 +24,8 @@ for name in cloudflare-tunnel-token cloudflare-dns-token; do
     printf 'Empty token or whitespace detected; nothing saved for this field.\n' >&2
     exit 1
   fi
-  if [[ "$name" == cloudflare-dns-token && ! "$token_value" =~ ^[A-Za-z0-9_-]{40}$ ]]; then
-    printf 'Expected a 40-character Cloudflare API token; value was not saved.\n' >&2
+  if [[ "$name" == cloudflare-dns-token && ! "$token_value" =~ ^[A-Za-z0-9_-]{35,50}$ && ! "$token_value" =~ ^cf(ut|at)_[A-Za-z0-9_-]{32,256}$ ]]; then
+    printf 'Unsupported Cloudflare API token format; value was not saved.\n' >&2
     exit 1
   fi
   temporary_file="$(mktemp "$secret_directory/.token.XXXXXX")"
