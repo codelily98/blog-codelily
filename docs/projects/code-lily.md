@@ -37,7 +37,7 @@
 
 ## 다음 시작점
 
-2026-11-03 R2 최신 상태: 실제 키/CORS/공개 도메인 등록과 S3 전송·공개 복사·비공개 다운로드·파일 형식 거절 검증 및 앱 이미지 활성화 완료. [현재 명세](../../infra/releases/2026-11-03-r2-active.json)를 따른다. 공개 R2는 원본 캐시 헤더를 반환하지만 아직 DYNAMIC이므로 사용자의 Cache Rule 배포 후 최신 검증 도구를 read-only mount해 CDN HIT와 강화된 거절 조건을 확인한다. 아래 연동 준비 문단은 과거 이력이다. Google 실제 로그인/에디터 전송·SJC 502·WAF·백업 인수는 계속 대기다.
+2026-11-03 R2 최신 상태: 실제 키/CORS/공개 도메인 등록과 S3 전송·공개 복사·비공개 다운로드·파일 형식 거절 검증 및 앱 이미지 활성화 완료. [현재 명세](../../infra/releases/2026-11-03-r2-active.json)를 따른다. 사용자의 Cache Rule 저장 후 최신 도구에서 공개 CDN MISS → HIT(Age 0), 허용/비허용 Origin CORS 및 정확한 위장 파일 거절까지 통과했다. 다음은 Google 실제 로그인/에디터 전송이며 SJC 502·WAF·백업 인수도 남아 있다. 아래 연동 준비 문단은 과거 이력이다.
 
 R2 후속: 비공개 `blog-storage`, 공개 `public-blog-storage`, 공개 도메인 `public-blog-r2.codelily.kr`로 확정했다. 안전한 키 입력·CORS·확장자 없는 공개 이미지 캐시 규칙은 [R2 연동](../operations/R2-연동.md)을 따른다. SDK presign 보완의 로컬 검증은 통과했으며 실계정/운영 이미지 반영은 대기다.
 

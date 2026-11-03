@@ -2,7 +2,7 @@
   "sourceCommit": "dde7621e1627dddf355c20fde37fb35c6b25b154",
   "platform": "linux/amd64",
   "delivery": "docker-save-scp-load",
-  "stateAtRecording": "runtime-active-storage-verified-CDN-HIT-pending",
+  "stateAtRecording": "runtime-active-storage-and-CDN-HIT-verified",
   "images": {
     "blog": "sha256:38893483f948b24f6a6bd6a9359fd3a4cf5462e270b18cad7bbe69a349ba19ef",
     "migrator": "sha256:3335738758643036c29e1c042e1942eb28e7427df22b8c59345ebaafc9715d48"
@@ -14,10 +14,13 @@
     "R2 environment fields present without disclosing values",
     "readiness 200",
     "public Posts and About 200 with ISR 300 seconds",
-    "personal API private/no-store"
+    "personal API private/no-store",
+    "real S3 signed PUT, validated cross-bucket copy, private signed GET and unsigned denial",
+    "allowed and untrusted Origin CORS preflight",
+    "spoofed image format rejection",
+    "public CDN GET MISS then HIT, Age 0, immutable one year and matching bytes"
   ],
   "pending": [
-    "public R2 cache rule and observed CDN HIT",
     "actual Google-authenticated editor upload"
   ]
 }

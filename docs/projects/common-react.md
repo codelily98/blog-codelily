@@ -13,7 +13,7 @@
 - [x] R2: S3 adapter·서명 업로드·HEAD 검증·권한부 다운로드
 - [x] 타입·경계·콘텐츠/SQL·브라우저 검사와 lockfile 버전 고정
 - [ ] 두 번째 소비 앱에서 재사용 검증
-- [ ] 실제 R2 계정에서 서명 업로드/다운로드·CORS 검증
+- [x] 실제 R2 계정에서 서명 업로드/다운로드·허용/비허용 Origin CORS·공개 CDN HIT 검증
 
 ## 완료 기준
 
@@ -21,7 +21,7 @@
 
 ## 다음 시작점·기록
 
-2026-11-03 후속: 실제 R2에서 서명 PUT·허용 Origin CORS·공개 복사/바이트 일치·서명 비공개 GET/no-store·익명 접근 거부·위장 파일 거절 통과. storage 보완 이미지도 운영 반영했다. 최신 도구의 비허용 Origin·정확한 형식 오류 조건과 공개 CDN HIT는 Cache Rule 배포 후 함께 검증한다. Google 에디터 실제 브라우저 전송과 두 번째 앱 재사용은 별도 대기다.
+2026-11-03 후속: 실제 R2에서 서명 PUT·허용/비허용 Origin CORS·공개 복사/바이트 일치·서명 비공개 GET/no-store·익명 접근 거부·위장 파일의 정확한 형식 오류 거절 통과. storage 보완 이미지도 운영 반영했다. 사용자의 Cache Rule 저장 후 필수 CDN 검증에서 공개 GET MISS → HIT(Age 0)까지 통과했다. Google 에디터 실제 브라우저 전송과 두 번째 앱 재사용은 별도 대기다.
 
 2026-11-03: 공통 R2 presigner의 빈 본문 CRC32 문제를 재현·보완하고 type/length 서명과 public/private bucket 분리를 검증했다. 전체 테스트 7개·타입·경계 통과. 실제 계정 검증은 [R2 연동 절차](../operations/R2-연동.md)를 따라 키/CORS 등록 후 수행한다.
 

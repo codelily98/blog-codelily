@@ -12,4 +12,5 @@ test-results/
 playwright-report/
 infra/secrets/
 infra/env/
+infra/.env.before-*
 .idea/
