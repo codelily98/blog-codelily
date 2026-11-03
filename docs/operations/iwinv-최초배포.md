@@ -128,6 +128,8 @@ sudo docker run --rm --user "$(id -u):$(id -g)" \
 
 ## 6. Cloudflare 신규 Tunnel과 인증서
 
+두 token을 생성한 뒤 서버의 대화형 Bash에서 `bash scripts/configure-cloudflare-secrets.sh`를 실행하면 입력을 숨긴 채 비밀 파일에 저장한다. PC에서 실행할 때는 `ssh -t`로 접속한다. 이 도구는 비대화형 실행을 거절하고 이미 설정된 비밀값은 보존한다. token을 명령 인자로 붙이거나 채팅에 전달하지 않는다.
+
 1. Cloudflare One에서 **새 remotely-managed cloudflared Tunnel** `codelily-blog`를 만든다. 기존 `naraebi` Tunnel은 재사용·변경하지 않는다.
 2. 발급된 token만 `infra/secrets/cloudflare-tunnel-token.txt`에 저장한다. Cloudflare가 제시하는 host 설치 명령은 별도로 실행하지 않는다. Compose의 cloudflared가 유일한 connector다.
 3. Cloudflare API token은 `codelily.kr` zone에 한정한 `Zone:DNS:Edit`, 필요한 `Zone:Zone:Read`만 부여하고 `infra/secrets/cloudflare-dns-token.txt`에 저장한다. Global API Key를 쓰지 않는다. DNS token은 zone 내 DNS 수정 권한이 있으므로 보호하고, Caddy는 `_acme-challenge.blog` TXT만 자동 관리하게 한다.

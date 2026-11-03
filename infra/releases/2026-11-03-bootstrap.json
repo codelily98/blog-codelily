@@ -1,0 +1,25 @@
+{
+  "sourceCommit": "4d43733317cdd884f84ff3f513d4aa0c1a48b892",
+  "delivery": "docker-save-scp-load",
+  "platform": "linux/amd64",
+  "images": {
+    "blog": "sha256:2c9bbe056464215b0fdbec50a90a9c68b6ff26b0283545f6e0e7a026c6a7e22c",
+    "migrator": "sha256:99b05d6eb25cb72b5420d0fbec8499adf587c78a61cad5687e10d7306029c1bb",
+    "caddy": "sha256:d97dc9607618e6a71bf25c539e355981bdaa32c231cf3497242d327d11a23ab4",
+    "cloudflared": "cloudflare/cloudflared@sha256:4955524aeaa379e154023d5a027c250f7b35041a2e7e950cf13f144bc9b9c5ba",
+    "postgres": "postgres@sha256:0cefaabd882e42bcb2a2f3dc56d3ce4770560ba62fd7f197f1a2e008fd5731ab",
+    "redis": "redis@sha256:8da19c7399dca900c6822a1cf30f9d2285585e2c4b457ff4095b0f4500054d3f"
+  },
+  "build": {
+    "node": "node@sha256:c86ecead9e55a5210ac1727de38a4ca840bf03dcaf34dc9749addbf383b1920c",
+    "caddyBuilder": "caddy@sha256:c4cd20eaa0b69112fd5d4f721ffc9671687e1d5d0b155c8620cf7546dbef94c0",
+    "caddyRuntime": "caddy@sha256:e70b164da81ef698b3ad19af799ea6086ce6d9e48ed4079eb9fe26f6fbf14ee5",
+    "caddyVersion": "v2.11.7",
+    "cloudflareDnsModuleVersion": "v0.2.4"
+  },
+  "archiveSha256": {
+    "codelily-release-4d43733.tar": "f092c16c6eb4da6c2889822b8f56dfde13dfc85c9c8b9183cb9d5dcb08c621bd",
+    "codelily-caddy-2.11.7.tar": "164d711c85367dbf04bb0e6dfbe6757321b0856326b2d98d4cf25339e67bdc60"
+  },
+  "notes": "Initial images are held locally on the deployment host, not published to a registry. Preserve or republish verified images for host-loss recovery."
+}
