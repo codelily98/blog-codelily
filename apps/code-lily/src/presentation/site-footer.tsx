@@ -16,12 +16,18 @@ export function SiteFooter() {
           <p className="mt-1 leading-6">기술을 배우고, 기록하고, 조금씩 더 나아가는 공간입니다.</p>
         </div>
         <div className="flex flex-col items-start gap-1 sm:items-end">
-          <div className="flex items-center gap-5">
+          <div className="flex flex-wrap items-center gap-x-5">
             <Link href="/posts" className="flex min-h-11 items-center">
               Posts
             </Link>
             <Link href="/about" className="flex min-h-11 items-center">
               About
+            </Link>
+            <Link href="/privacy" className="flex min-h-11 items-center">
+              개인정보처리방침
+            </Link>
+            <Link href="/terms" className="flex min-h-11 items-center">
+              이용약관
             </Link>
             <AnalyticsConsent />
           </div>

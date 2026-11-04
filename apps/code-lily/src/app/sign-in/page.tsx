@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { GoogleLoginButton } from '@/modules/identity/presentation/session-provider';
 export default function SignIn() {
   return (
@@ -11,6 +12,14 @@ export default function SignIn() {
         글과 About 편집에는 관리자가 부여한 권한이 필요합니다.
       </p>
       <GoogleLoginButton />
+      <div className="mt-5 flex flex-wrap gap-x-5 text-sm text-muted">
+        <Link href="/privacy" className="flex min-h-11 items-center underline underline-offset-4">
+          개인정보처리방침
+        </Link>
+        <Link href="/terms" className="flex min-h-11 items-center underline underline-offset-4">
+          이용약관
+        </Link>
+      </div>
     </main>
   );
 }

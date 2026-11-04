@@ -46,9 +46,9 @@ export function AnalyticsConsent() {
       </button>
       <Dialog open={open} onClose={() => setOpen(false)} title="방문 기록 설정">
         <p className="text-sm leading-7 text-muted">
-          동의하면 페이지 경로와 방문 시각을 익명화된 브라우저 식별자와 함께 최대 30일 기록합니다.
-          입력 내용·검색어·IP 주소는 방문 기록에 저장하지 않습니다. 거부해도 모든 기본 기능을 이용할
-          수 있습니다.
+          동의하면 페이지 경로와 방문 시각을 같은 브라우저의 방문을 구분하는 식별자와 함께
+          기록합니다. 보존 기준은 30일입니다. 입력 내용·검색어·IP 주소는 방문 기록에 저장하지
+          않습니다. 거부해도 모든 기본 기능을 이용할 수 있습니다.
         </p>
         <p className="mt-3 text-xs text-muted">
           현재 상태:{' '}
