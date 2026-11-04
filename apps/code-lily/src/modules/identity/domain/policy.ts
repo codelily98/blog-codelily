@@ -25,7 +25,7 @@ export function owner(actor: Actor | null): asserts actor is Actor {
   authenticated(actor);
   if (actor.role !== 'OWNER') throw new AppError(403, '관리자 권한이 필요합니다.', 'FORBIDDEN');
 }
-export function owned(actor: Actor | null, authorId: string): asserts actor is Actor {
+export function owned(actor: Actor | null, authorId: string | null): asserts actor is Actor {
   writer(actor);
   if (actor.role !== 'OWNER' && actor.id !== authorId)
     throw new AppError(403, '자신의 콘텐츠만 수정할 수 있습니다.', 'FORBIDDEN');

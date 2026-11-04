@@ -3,7 +3,7 @@ export interface Category {
   id: string;
   name: string;
   slug: string;
-  ownerId: string;
+  ownerId: string | null;
   count: number;
 }
 export interface PostSummary {
@@ -16,8 +16,9 @@ export interface PostSummary {
   status: 'DRAFT' | 'PUBLISHED';
   categoryId: string | null;
   categoryName: string | null;
-  authorId: string;
+  authorId: string | null;
   authorName: string;
+  bodyRemoved: boolean;
   createdAt: string;
   updatedAt: string;
   publishedAt: string | null;
@@ -41,7 +42,7 @@ export interface PostInput {
 export interface Comment {
   id: string;
   postId: string;
-  authorId: string;
+  authorId: string | null;
   authorName: string;
   body: string;
   createdAt: string;
@@ -59,6 +60,7 @@ export interface PostRepository {
     tag?: string;
     q?: string;
     authorId?: string;
+    withdrawn?: boolean;
     includeDrafts?: boolean;
     limit?: number;
     offset?: number;
@@ -66,6 +68,11 @@ export interface PostRepository {
   publishedCount(): Promise<number>;
   find(idOrSlug: string): Promise<Post | null>;
   save(input: PostInput & { renderedHtml: string }, actorId: string): Promise<Post>;
+  setWithdrawnVisibility(
+    id: string,
+    status: PostSummary['status'],
+    actorId: string,
+  ): Promise<boolean>;
   delete(id: string, actorId: string): Promise<void>;
   comments(postId: string): Promise<Comment[]>;
   addComment(postId: string, body: string, actorId: string): Promise<Comment>;

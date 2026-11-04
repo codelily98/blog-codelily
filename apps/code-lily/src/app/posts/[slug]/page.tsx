@@ -47,7 +47,7 @@ export default async function PostDetail({ params }: Props) {
             <time dateTime={post.publishedAt || post.createdAt}>
               {(post.publishedAt || post.createdAt).slice(0, 10).replaceAll('-', '.')}
             </time>
-            <span>{Math.max(1, Math.ceil(post.source.length / 700))}분 읽기</span>
+            {post.bodyRemoved ? null : <span>{post.readMinutes}분 읽기</span>}
           </div>
           <h1 className="mt-5 text-3xl leading-[1.4] font-bold tracking-[-.045em] sm:text-[40px]">
             {post.title}
@@ -55,10 +55,17 @@ export default async function PostDetail({ params }: Props) {
           <p className="mt-5 text-sm leading-7 text-muted">{post.excerpt}</p>
           <p className="mt-5 text-xs text-muted">{post.authorName}</p>
         </header>
-        <div
-          className="content-body sun-editor-editable"
-          dangerouslySetInnerHTML={{ __html: post.renderedHtml }}
-        />
+        {post.bodyRemoved ? (
+          <p className="rounded-lg border border-line p-5 text-sm leading-7 text-muted">
+            회원 탈퇴 요청에 따라 글 본문이 삭제되었습니다. 다른 회원이 작성한 댓글은 아래에서 볼 수
+            있습니다.
+          </p>
+        ) : (
+          <div
+            className="content-body sun-editor-editable"
+            dangerouslySetInnerHTML={{ __html: post.renderedHtml }}
+          />
+        )}
         <ul className="mt-10 flex flex-wrap gap-2" aria-label="글 태그">
           {post.tags.map((tag) => (
             <li key={tag}>

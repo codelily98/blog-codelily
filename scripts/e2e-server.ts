@@ -2,14 +2,9 @@
 import { PGlite } from '@electric-sql/pglite';
 import { PGLiteSocketServer } from '@electric-sql/pglite-socket';
 import { spawn } from 'node:child_process';
-import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 const db = await PGlite.create();
 await db.exec('CREATE SCHEMA blog_schema');
-await db.exec(await readFile('apps/code-lily/migrations/001_initial.sql', 'utf8'));
-await db.exec(
-  "CREATE TABLE schema_migrations(version TEXT PRIMARY KEY); INSERT INTO schema_migrations VALUES('001_initial.sql');",
-);
 const server = new PGLiteSocketServer({ db, host: '127.0.0.1', port: 55433 });
 await server.start();
 const env = {
@@ -36,6 +31,7 @@ const run = (file: string) =>
     );
   });
 try {
+  await run('scripts/migrate.ts');
   await run('scripts/seed.ts');
   await run('scripts/e2e-auth-fixture.ts');
 } catch (error) {

@@ -1,5 +1,6 @@
 import type { Database, Connection } from '../../../infrastructure/database';
 import { transaction } from '../../../infrastructure/database';
+import { AppError } from '../../identity/domain/policy';
 import type {
   PostRepository,
   Post,
@@ -9,17 +10,17 @@ import type {
   PostInput,
 } from '../domain/models';
 
-const commonColumns = `p.id,p.slug,p.title,p.excerpt,p.tags,p.status,GREATEST(1,ceil(length(p.source)::numeric/700))::int AS "readMinutes",
-  p.category_id AS "categoryId",c.name AS "categoryName",p.author_id AS "authorId",u.name AS "authorName",
+const commonColumns = `p.id,p.slug,p.title,p.excerpt,p.tags,p.status,p.body_removed AS "bodyRemoved",GREATEST(1,ceil(length(p.source)::numeric/700))::int AS "readMinutes",
+  p.category_id AS "categoryId",c.name AS "categoryName",p.author_id AS "authorId",coalesce(u.name,'탈퇴한 회원') AS "authorName",
   p.created_at AS "createdAt",p.updated_at AS "updatedAt",p.published_at AS "publishedAt"`;
 const postJoins =
-  'FROM posts p JOIN "user" u ON u.id=p.author_id LEFT JOIN categories c ON c.id=p.category_id';
+  'FROM posts p LEFT JOIN "user" u ON u.id=p.author_id LEFT JOIN categories c ON c.id=p.category_id';
 const postSelect = `SELECT ${commonColumns},p.source,p.format,p.rendered_html AS "renderedHtml" ${postJoins}`;
 const postListSelect = `SELECT ${commonColumns} ${postJoins}`;
 const categorySelect = `SELECT c.id,c.name,c.slug,c.owner_id AS "ownerId",count(p.id)::int AS count FROM categories c
   LEFT JOIN posts p ON p.category_id=c.id AND p.status='PUBLISHED'`;
-const commentSelect = `SELECT c.id,c.post_id AS "postId",c.author_id AS "authorId",u.name AS "authorName",c.body,c.created_at AS "createdAt"
-  FROM comments c JOIN "user" u ON u.id=c.author_id`;
+const commentSelect = `SELECT c.id,c.post_id AS "postId",c.author_id AS "authorId",coalesce(u.name,'탈퇴한 회원') AS "authorName",c.body,c.created_at AS "createdAt"
+  FROM comments c LEFT JOIN "user" u ON u.id=c.author_id`;
 const serialize = <T>(value: T): T => JSON.parse(JSON.stringify(value));
 async function audit(connection: Connection, actorId: string, action: string, id: string) {
   await connection.query('INSERT INTO audit_logs(actor_id,action,entity_id) VALUES($1,$2,$3)', [
@@ -83,6 +84,7 @@ export class PostgresPostsRepository implements PostRepository {
     };
     if (!filters.includeDrafts) conditions.push(`p.status='PUBLISHED'`);
     if (filters.authorId) conditions.push(`p.author_id=${param(filters.authorId)}`);
+    if (filters.withdrawn) conditions.push('p.author_id IS NULL');
     if (filters.category) conditions.push(`c.slug=${param(filters.category)}`);
     if (filters.tag) conditions.push(`${param(filters.tag)}=ANY(p.tags)`);
     if (filters.q) {
@@ -94,7 +96,7 @@ export class PostgresPostsRepository implements PostRepository {
     return serialize(
       (
         await this.db.query<PostSummary>(
-          `${postListSelect} ${conditions.length ? 'WHERE ' + conditions.join(' AND ') : ''} ORDER BY p.published_at DESC NULLS LAST,p.updated_at DESC LIMIT ${limit} OFFSET ${offset}`,
+          `${postListSelect} ${conditions.length ? 'WHERE ' + conditions.join(' AND ') : ''} ORDER BY p.published_at DESC NULLS LAST,p.updated_at DESC,p.id LIMIT ${limit} OFFSET ${offset}`,
           params,
         )
       ).rows,
@@ -124,22 +126,42 @@ export class PostgresPostsRepository implements PostRepository {
       ];
       const result = input.id
         ? await connection.query<{ id: string }>(
-            `UPDATE posts SET slug=$1,title=$2,excerpt=$3,source=$4,format=$5,rendered_html=$6,tags=$7,status=$8,category_id=$9,updated_at=now(),published_at=CASE WHEN $8='PUBLISHED' THEN coalesce(published_at,now()) ELSE NULL END WHERE id=$10 RETURNING id`,
+            `UPDATE posts SET slug=$1,title=$2,excerpt=$3,source=$4,format=$5,rendered_html=$6,tags=$7,status=$8,category_id=$9,updated_at=now(),published_at=CASE WHEN $8='PUBLISHED' THEN coalesce(published_at,now()) ELSE NULL END WHERE id=$10 AND NOT body_removed RETURNING id`,
             [...values, input.id],
           )
         : await connection.query<{ id: string }>(
             `INSERT INTO posts(slug,title,excerpt,source,format,rendered_html,tags,status,category_id,author_id,published_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,CASE WHEN $8='PUBLISHED' THEN now() ELSE NULL END) RETURNING id`,
             [...values, actorId],
           );
+      if (!result.rows[0])
+        throw new AppError(409, '글 상태가 바뀌었습니다. 목록을 새로고침해 주세요.');
       const id = result.rows[0].id;
       await audit(connection, actorId, 'post.saved', id);
       return id;
     });
     return (await this.find(id))!;
   }
+  async setWithdrawnVisibility(id: string, status: PostSummary['status'], actorId: string) {
+    return transaction(this.db, async (connection) => {
+      const result = await connection.query(
+        `UPDATE posts SET status=$2, updated_at=now(),
+          published_at=CASE WHEN $2='PUBLISHED' THEN coalesce(published_at,now()) ELSE NULL END
+        WHERE id=$1 AND author_id IS NULL RETURNING id`,
+        [id, status],
+      );
+      if (!result.rows.length) return false;
+      await audit(connection, actorId, `post.withdrawn.${status.toLowerCase()}`, id);
+      return true;
+    });
+  }
   async delete(id: string, actorId: string) {
     await transaction(this.db, async (connection) => {
-      await connection.query('DELETE FROM posts WHERE id=$1', [id]);
+      const deleted = await connection.query(
+        'DELETE FROM posts WHERE id=$1 AND NOT body_removed RETURNING id',
+        [id],
+      );
+      if (!deleted.rows.length)
+        throw new AppError(409, '글 상태가 바뀌었습니다. 목록을 새로고침해 주세요.');
       await audit(connection, actorId, 'post.deleted', id);
     });
   }

@@ -1,6 +1,13 @@
 import { plainText, renderContent } from '@codelily/content';
-import { AppError, authenticated, owned, writer, type Actor } from '../../identity/domain/policy';
-import type { PostInput, PostRepository } from '../domain/models';
+import {
+  AppError,
+  authenticated,
+  owned,
+  owner,
+  writer,
+  type Actor,
+} from '../../identity/domain/policy';
+import type { PostInput, PostRepository, PostSummary } from '../domain/models';
 
 export class PostsService {
   constructor(private repository: PostRepository) {}
@@ -21,6 +28,20 @@ export class PostsService {
       limit: 100,
     });
   }
+  withdrawn(actor: Actor | null, page: number) {
+    owner(actor);
+    return this.repository.list({
+      withdrawn: true,
+      includeDrafts: true,
+      limit: 26,
+      offset: (page - 1) * 25,
+    });
+  }
+  async setWithdrawnVisibility(id: string, status: PostSummary['status'], actor: Actor | null) {
+    owner(actor);
+    if (!(await this.repository.setWithdrawnVisibility(id, status, actor.id)))
+      throw new AppError(404, '탈퇴 회원의 글을 찾을 수 없습니다.');
+  }
   async read(id: string, actor: Actor | null = null) {
     const post = await this.repository.find(id);
     if (!post) throw new AppError(404, '글을 찾을 수 없습니다.', 'NOT_FOUND');
@@ -33,6 +54,8 @@ export class PostsService {
       const existing = await this.repository.find(input.id);
       if (!existing) throw new AppError(404, '글을 찾을 수 없습니다.');
       owned(actor, existing.authorId);
+      if (existing.bodyRemoved)
+        throw new AppError(409, '탈퇴로 본문이 삭제된 글은 편집할 수 없습니다.');
     }
     if (input.categoryId) {
       const category = await this.repository.category(input.categoryId);
@@ -50,6 +73,8 @@ export class PostsService {
   async delete(id: string, actor: Actor | null) {
     const post = await this.read(id, actor);
     owned(actor, post.authorId);
+    if (post.bodyRemoved)
+      throw new AppError(409, '댓글을 보존하는 글은 비공개로 전환할 수 있습니다.');
     return this.repository.delete(post.id, actor.id);
   }
   async saveCategory(input: { id?: string; name: string; slug: string }, actor: Actor | null) {

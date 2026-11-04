@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { services } from '@/composition';
 import { api, jsonBody } from '@/presentation/http';
 import { postSchema } from '@/presentation/schemas';
@@ -20,6 +21,21 @@ export function PUT(request: Request, context: Context) {
       );
       invalidatePosts();
       return post;
+    },
+    { mutation: true },
+  );
+}
+export function PATCH(request: Request, context: Context) {
+  return api(
+    request,
+    async (actor) => {
+      const id = z.uuid().parse((await context.params).id);
+      const { status } = z
+        .strictObject({ status: postSchema.shape.status })
+        .parse(await jsonBody(request));
+      await (await services()).posts.setWithdrawnVisibility(id, status, actor);
+      invalidatePosts();
+      return { status };
     },
     { mutation: true },
   );

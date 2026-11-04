@@ -2,7 +2,6 @@ import Link from 'next/link';
 import type { PostSummary } from '../domain/models';
 export function PostCard({ post }: { post: PostSummary }) {
   const date = new Date(post.publishedAt || post.createdAt);
-  const reading = post.readMinutes;
   return (
     <article className="group flex min-h-[232px] flex-col rounded-xl border border-line bg-surface p-6 transition-colors hover:border-muted/60">
       <div className="mb-3 flex flex-wrap items-center gap-x-2 text-xs leading-5 text-muted">
@@ -10,7 +9,7 @@ export function PostCard({ post }: { post: PostSummary }) {
           {date.toISOString().slice(0, 10).replaceAll('-', '.')}
         </time>
         <span aria-hidden="true">·</span>
-        <span>{reading}분</span>
+        <span>{post.bodyRemoved ? '본문 삭제' : `${post.readMinutes}분`}</span>
         {post.categoryName ? (
           <>
             <span aria-hidden="true">·</span>

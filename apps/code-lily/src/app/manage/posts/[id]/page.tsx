@@ -1,3 +1,4 @@
+import { redirect } from 'next/navigation';
 import { services } from '@/composition';
 import { managementActor } from '@/presentation/manage-actor';
 import { owned } from '@/modules/identity/domain/policy';
@@ -10,6 +11,7 @@ export default async function EditPost({ params }: { params: Promise<{ id: strin
     posts.categories(),
   ]);
   owned(actor, post.authorId);
+  if (post.bodyRemoved) redirect('/manage?view=withdrawn');
   return (
     <PostEditor
       post={post}
