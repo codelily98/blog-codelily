@@ -1,0 +1,20 @@
+{
+  "release": "withdrawal-d77331427cd1",
+  "sourceBaseCommit": "58775c1d16aaa18ed935ed0c7d1fb9352f2ecfad",
+  "sourceSnapshotSha256": "d77331427cd189e784fc302e229a0c3e56f278ebee000eef3dc71ffa418d4836",
+  "platform": "linux/amd64",
+  "delivery": "docker-save-scp-load",
+  "activatedAt": "2026-11-04T15:46:21+09:00",
+  "images": {
+    "blog": "sha256:9f43759c879d0f955a957fafd97a3ab79e733eb941bf432ff79c87df614231f4",
+    "migrator": "sha256:deb67abe8dca4ab012ae1decdab29d94f803550e1a569b443151e6d8c6348dd1"
+  },
+  "archiveSha256": {
+    "codelily-withdrawal-linux-amd64.tar": "b777162f9190646cc281f429dc6a9a81055b1c25ccb255e1dc2c0bad98f12769",
+    "post-migration.sql": "b84e49e1c817acd5a90ead952ae4ee7710ff9f8cb0928ea081dc2612cdfab305"
+  },
+  "rollbackReference": "2026-11-03-r2-active.json",
+  "preDeploymentEncryptedSnapshot": "20261104T064313Z",
+  "migrationAppliedThrough": "005_withdrawal_upload_settlement.sql",
+  "policyStatus": "public-review-draft"
+}

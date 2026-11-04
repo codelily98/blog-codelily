@@ -1,5 +1,7 @@
 # iwinv Ubuntu 26.04 LTS 최초 배포
 
+**2026-11-04 현재 운영:** [무상 보안 조치](무상-보안조치-2026-11-04.md)를 반영했다. 신규 SSH는 `ubuntu` 키 인증이며 root/비밀번호 SSH는 차단됐다. 관리 명령은 sudo로 실행한다. ELCAP·host inbound는 관리 IP SSH만 허용하며 웹 포트는 미허용이다. 자동 보안 패치·암호화 외부 백업·상태/보존 timer가 있다. 아래 최초 설치 절차는 초기 provisioning 이력이며 이미 설치된 서버에 재실행하지 않는다.
+
 2026-11-03 기준. 실제 Ubuntu 26.04 LTS/amd64·2 CPU·약 8GB RAM을 확인하고 Docker Engine 29.9.2/Compose 5.7.0 설치·hello-world·이미지 pull을 검증했다. NTS 4460/TCP outbound 허용 후 시간 동기화도 복구했다. 앱 배포·DNS 변경·외부 연동 인수는 진행 중이며 상세 상태는 진행현황을 따른다. 이 문서의 명령은 별도 표기가 없으면 **서버의 Bash에서 저장소 루트 기준**으로 실행한다.
 
 ## 1. 변경 범위와 연결
@@ -132,6 +134,8 @@ sudo docker run --rm --user "$(id -u):$(id -g)" \
 
 발급은 개발 PC의 웹브라우저에서 Cloudflare 대시보드로 진행한다. Docker 선택은 서버 connector의 실행 환경을 뜻한다. API token은 기존 형식과 `cfut_`/`cfat_` 형식을 모두 지원하며, 발급한 값은 서버의 secret 파일에만 등록한다.
 
+**개발 PC에서 Windows connector 설치 명령을 실행하지 않는다.** 이 블로그의 `caddy:443`은 운영 Docker 내부 주소다. 같은 Tunnel을 개발 PC에서도 실행하면 원본에 접근할 수 없는 replica로 요청이 분산돼 Tunnel이 healthy여도 502가 발생할 수 있다. 실제 2026-11-04 장애는 중복 Windows 서비스 중지·자동 시작 해제로 복구했다. 추가 replica는 동일 원본에 접근할 수 있는 환경에서 별도 검증 후 구성한다.
+
 1. Cloudflare One에서 **새 remotely-managed cloudflared Tunnel** `codelily-blog`를 만든다. 기존 `naraebi` Tunnel은 재사용·변경하지 않는다.
 2. 발급된 token만 `infra/secrets/cloudflare-tunnel-token.txt`에 저장한다. Cloudflare가 제시하는 host 설치 명령은 별도로 실행하지 않는다. Compose의 cloudflared가 유일한 connector다.
 3. Cloudflare API token은 `codelily.kr` zone에 한정한 `Zone:DNS:Edit`, 필요한 `Zone:Zone:Read`만 부여하고 `infra/secrets/cloudflare-dns-token.txt`에 저장한다. Global API Key를 쓰지 않는다. DNS token은 zone 내 DNS 수정 권한이 있으므로 보호하고, Caddy는 `_acme-challenge.blog` TXT만 자동 관리하게 한다.
@@ -166,7 +170,7 @@ dc up -d tunnel
 dc ps
 ```
 
-새 `pgdata`에서는 `local-init.sh`가 runtime/migrator를, `production-init.sh`가 maintenance role을 만든다. 첫 SQL은 신규 DB 초기화 때만 실행된다. `post-migration.sql`은 매 migration 성공 후 실행해 runtime의 migration 이력 쓰기를 회수하고 maintenance에는 보존 정리용 4개 테이블의 SELECT/DELETE만 준다. 기존 DB에 init script를 추가해도 자동 실행되지 않는다. 이 경우 백업 후 role·권한을 확인하여 별도 이관하며 volume을 삭제하지 않는다.
+새 `pgdata`에서는 `local-init.sh`가 runtime/migrator를, `production-init.sh`가 maintenance role을 만든다. 첫 SQL은 신규 DB 초기화 때만 실행된다. `post-migration.sql`은 매 migration 성공 후 실행해 runtime의 migration 이력 쓰기를 회수한다. maintenance는 기존 보존 정리용 4개 테이블의 SELECT/DELETE 및 인증 속도 제한 테이블의 DELETE와 `id`·`lastRequest` 열 SELECT만 받는다. 기존 DB에 init script를 추가해도 자동 실행되지 않는다. 이 경우 백업 후 role·권한을 확인하여 별도 이관하며 volume을 삭제하지 않는다.
 
 Redis도 지금 실행하려면 `dc --profile cache pull redis`, `dc --profile cache up -d --wait redis`를 추가한다. 현재 Next.js는 Redis를 쓰지 않으며 Redis 실행만으로 ISR 캐시나 세션이 Redis로 이동하지 않는다. 유지보수는 `dc --profile tools run --rm maintenance`로 한 번 실행하고 실제 정기 예약은 별도 구성한다.
 
