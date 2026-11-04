@@ -1,6 +1,28 @@
 # 공개 경로별 502 진단
 
+## 2026-11-04 Windows 중복 connector 장애 — 복구
+
+00:08~00:13 KST, DNS 정상이나 공개 `/posts` HKG·readiness NRT가 502였다. readiness 연속 6회도 모두 502였다. Cloudflare API 조회에서 블로그 Tunnel은 healthy, 원격 ingress는 기존 `https://caddy:443`·Host/SNI `blog.codelily.kr` 그대로였다. Worker route·Page Rule은 없었고 캐시 규칙은 공개 R2 hostname에만 적용됐다.
+
+Tunnel에는 기존 Linux connector 외에 00:06:06 KST 시작한 Windows connector가 추가돼 각각 4개 연결이 있었다. 개발 PC의 Cloudflared 서비스도 같은 시각에 시작됐으며 사용자가 이 PC에서 설치/실행했음을 확인했다. 이 원본 주소는 Linux Docker 내부 서비스용이다. [Cloudflare replica 설명](https://developers.cloudflare.com/tunnel/configuration/#replicas-and-high-availability)대로 같은 Tunnel의 여러 connector에 요청이 분산될 수 있으므로 healthy 표시는 모든 connector의 원본 접근 성공을 뜻하지 않는다.
+
+Windows 관리자 권한으로 서비스가 참조하는 token-file의 Tunnel ID를 메모리에서 비교해 블로그 일치를 검증했다. 일치할 때만 해당 Cloudflared 서비스를 중지하고 시작 유형을 Automatic → Disabled로 변경했다. 서비스 삭제·토큰 회전·서버 컨테이너·DNS·ingress/TLS/WAF 변경은 하지 않았다. 서비스 재시작은 이 장애를 다시 유발할 수 있으므로 복구 절차로 사용하지 않는다.
+
+중지 직후 Cloudflare API에서 Linux connector 1개/연결 4개만 남았고 Posts/readiness는 200으로 복귀했다. readiness 연속 6회 200(약 0.2~0.5초), `/api/me`·`/manage` 200/private,no-store, 내부 API·`/.env`·`/.git/config` 404, 기존 naraebi 200을 확인했다. 실패 Ray 예: `a54c4be08cdd76b3-HKG`·`a54c4bf35938d777-NRT`; 복구 예: readiness `a54c526d79aa5de0-HKG`·Posts `a54c526fd8b7adaf-NRT`다. 이번 장애는 Windows 중복 connector가 원인으로 판단된다.
+
+Browser plugin 미제공으로 Playwright를 사용했다. Chrome launch는 즉시 종료돼 설치된 Edge로 대체했다. 1440×1100·390×844에서 Posts HTTP 200·페이지 제목·본문·오류 overlay 없음·가로 잘림 없음·검색 초점/Escape 복귀·About 이동·console/page 오류 0을 확인하고 화면 캡처를 검토했다. 앱 코드 변경은 없다. `npm run typecheck`, `npm run check:boundaries`, `npm test`(7개), `npm run build`, `git diff --check`가 통과했다. 최초 빌드는 sandbox 파일 권한 EPERM으로 실패했고 제한 밖의 동일 명령 재실행은 성공했다.
+
+재발 방지: connector는 서버의 Compose에서만 실행한다. Cloudflare 설치 화면의 Windows 설치 명령을 개발 PC에서 실행하지 않는다. 새 replica는 해당 원본에 실제 접근 가능한 환경에서만 추가하며 connector별 OS·시작 시각·원본 접근을 확인한다. 현재 서비스는 Stopped/Disabled로 남아 있다.
+
+이전 SJC 오류는 Windows connector 시작 전부터 관측돼 이번 원인으로 설명하거나 해결됐다고 표시하지 않는다. 현재 서버 SSH는 키 승인 후 비대화형 서명이 불가했고 로컬 ssh-agent도 정지 상태여서 서버 내부/SJC 재검증은 하지 못했다. 사용자는 VS Code 접속이 된다고 확인했다. 다음은 서버 SJC 재검증과 Google 실제 로그인/에디터 인수다.
+
+## 2026-11-03 경로별 장애 — 원인 미확정 이력
+
 2026-11-03 KST. 원인 미확정이며 정상 경로의 성공과 다른 경로의 실패를 함께 기록한다. Cloudflare의 자체 장애 또는 정책 문제라고 단정하지 않는다.
+
+2026-11-04 무상 보안 조치 후속: 커널 재부팅 뒤 서버 자체 공개 posts는 SIN 경로 200, 개발 PC posts/readiness/개인 API·기존 naraebi도 200이었다. 중간 Caddy capability 제한에서 file capability 실행 요구를 놓쳐 exit 126/502가 발생했으며 NET_BIND_SERVICE만 허용한 뒤 정상 TLS·공개 응답을 재검증했다. 이는 이전 SJC 문제나 Windows 중복 connector 이력과 구분한다. [적용 기록](무상-보안조치-2026-11-04.md)을 참고한다.
+
+15:40~15:48 KST 보안 점검 후속: 개발 PC의 `/posts`·`/manage` 첫 GET에서도 502를 관측했다. 이 요청의 colo는 수집하지 않았다. 이어진 재조회는 posts HKG 200·manage NRT 200, 기존 naraebi HKG 200이었다. Caddy 전용 원본 주소의 readiness·posts는 인증서 검증을 유지한 HTTPS로 200이다. 따라서 아래 표의 개발 PC 성공은 이전 관측 이력이며 개발 PC 경로가 항상 정상이라고 일반화하지 않는다. 사용자 승인 후 Cloudflare 보안 화면에서 Free 기본 WAF 항상 활성·별도 사용자 지정 0/5·속도 제한 0/1을 확인했지만 이는 502 원인 확정을 의미하지 않는다. 정책·TLS 검증·컨테이너를 변경하지 않았다.
 
 | 확인 위치 | 결과 |
 |---|---|

@@ -1,0 +1,10 @@
+[Unit]
+Description=Codelily bounded host, backup and origin health checks
+After=docker.service
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 /opt/codelily/scripts/operations/health-check.py
+TimeoutStartSec=90
+MemoryMax=128M
+TasksMax=32
+NoNewPrivileges=yes

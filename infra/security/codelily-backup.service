@@ -1,0 +1,13 @@
+[Unit]
+Description=Encrypted Codelily database and configuration backup
+After=docker.service
+Requires=docker.service
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 /opt/codelily/scripts/operations/backup.py
+TimeoutStartSec=15min
+Nice=10
+IOSchedulingClass=idle
+MemoryMax=256M
+TasksMax=64
+NoNewPrivileges=yes

@@ -1,0 +1,13 @@
+[Unit]
+Description=Bounded Codelily retention with dedicated maintenance DB role
+After=docker.service
+Requires=docker.service
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/codelily
+ExecStart=/usr/bin/docker compose --env-file infra/.env -f infra/compose.production.yml --profile tools run --rm --no-deps maintenance
+TimeoutStartSec=5min
+Nice=10
+MemoryMax=128M
+TasksMax=64
+NoNewPrivileges=yes

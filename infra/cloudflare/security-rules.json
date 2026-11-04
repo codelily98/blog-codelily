@@ -1,0 +1,58 @@
+{
+  "custom": {
+    "name": "code-lily security",
+    "rules": [
+      {
+        "ref": "codelily_rate_scope",
+        "description": "Keep new free rate limit scoped to blog writes",
+        "expression": "(http.host ne \"blog.codelily.kr\") or (http.request.method in {\"GET\" \"HEAD\" \"OPTIONS\"})",
+        "action": "skip",
+        "action_parameters": {
+          "phases": [
+            "http_ratelimit"
+          ]
+        },
+        "logging": {
+          "enabled": false
+        },
+        "enabled": true
+      },
+      {
+        "ref": "codelily_block_probe_paths",
+        "description": "Block secret and repository probes on blog",
+        "expression": "(http.host eq \"blog.codelily.kr\") and (starts_with(lower(http.request.uri.path), \"/.env\") or lower(http.request.uri.path) eq \"/.git\" or starts_with(lower(http.request.uri.path), \"/.git/\") or lower(http.request.uri.path) eq \"/.svn\" or starts_with(lower(http.request.uri.path), \"/.svn/\"))",
+        "action": "block",
+        "enabled": true
+      },
+      {
+        "ref": "codelily_block_unused_methods",
+        "description": "Block unused HTTP tunnel and trace methods on blog",
+        "expression": "(http.host eq \"blog.codelily.kr\") and (http.request.method in {\"TRACE\" \"TRACK\" \"CONNECT\"})",
+        "action": "block",
+        "enabled": true
+      }
+    ]
+  },
+  "ratelimit": {
+    "name": "code-lily writes",
+    "rules": [
+      {
+        "ref": "codelily_write_rate",
+        "description": "Blog write APIs 60 requests per IP per 10 seconds",
+        "expression": "(http.request.uri.path eq \"/api/auth/sign-in/social\") or (http.request.uri.path eq \"/api/auth/sign-out\") or (http.request.uri.path eq \"/api/uploads\") or (starts_with(http.request.uri.path, \"/api/uploads/\") and ends_with(http.request.uri.path, \"/complete\")) or (http.request.uri.path eq \"/api/posts\") or starts_with(http.request.uri.path, \"/api/posts/\") or (http.request.uri.path in {\"/api/comments\" \"/api/categories\" \"/api/about\" \"/api/members\" \"/api/content/preview\"})",
+        "action": "block",
+        "enabled": true,
+        "ratelimit": {
+          "characteristics": [
+            "cf.colo.id",
+            "ip.src"
+          ],
+          "period": 10,
+          "requests_per_period": 60,
+          "mitigation_timeout": 10,
+          "requests_to_origin": false
+        }
+      }
+    ]
+  }
+}
