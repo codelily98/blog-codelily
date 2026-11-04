@@ -102,5 +102,5 @@ R2 후속: 비공개 `blog-storage`, 공개 `public-blog-storage`, 공개 도메
 - [x] Cloudflare Tunnel/WAF·Caddy DNS-01·R2 bucket/custom domain/CORS를 실제 계정에서 설정했다.
 - [x] 최초 암호화 외부 백업·격리 DB 복원을 확인했다.
 - [ ] 실제 서버 부하·월간 복원·ACME 갱신 장기관측·NVDA/VoiceOver 수동 검사를 수행한다.
-- [x] 지정한 `codelily98/blog-codelily` Git 저장소에 기존 이력을 보존해 연결했다. 한글 커밋으로 소스·lockfile·문서를 동기화한다.
+- [x] 지정한 `codelily98/blog-codelily` Git 저장소에 기존 이력을 보존해 연결했다. [커밋 메시지 규칙](../../AGENTS.md#커밋-메시지-규칙)에 따라 소스·lockfile·문서를 동기화한다.
 - [ ] 별도 통합 admin·이력서·독립 소개 서비스는 각각의 프로젝트 문서를 따라 구현한다.

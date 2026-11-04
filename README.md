@@ -1,6 +1,6 @@
 # Codelily
 
-저장소: [codelily98/blog-codelily](https://github.com/codelily98/blog-codelily). 커밋 메시지는 한글로 작성합니다.
+저장소: [codelily98/blog-codelily](https://github.com/codelily98/blog-codelily). 모든 커밋은 [커밋 메시지 규칙](AGENTS.md#커밋-메시지-규칙)을 따릅니다.
 
 Next.js 풀스택 서비스와 공통 React 모듈을 함께 관리하는 workspace입니다. 첫 서비스는 자기소개·기술 블로그 **code-lily**이며 운영 도메인은 `blog.codelily.kr`입니다.
 
