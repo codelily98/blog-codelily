@@ -4,7 +4,7 @@ import type { R2Storage } from '@codelily/storage';
 
 export interface UploadRecord {
   id: string;
-  ownerId: string;
+  ownerId: string | null;
   objectKey: string;
   bucketKind: 'PUBLIC' | 'PRIVATE';
   contentType: string;
@@ -13,7 +13,7 @@ export interface UploadRecord {
 }
 export interface UploadRepository {
   find(id: string): Promise<UploadRecord | null>;
-  reserve(row: UploadRecord): Promise<void>;
+  reserve(row: UploadRecord & { ownerId: string }): Promise<void>;
   finish(id: string, key: string): Promise<void>;
   reject(id: string): Promise<void>;
   recentCount(ownerId: string): Promise<number>;

@@ -1,6 +1,7 @@
 import {
   S3Client,
   PutObjectCommand,
+  HeadBucketCommand,
   HeadObjectCommand,
   GetObjectCommand,
   CopyObjectCommand,
@@ -76,10 +77,71 @@ export class R2Storage {
       endpoint: `https://${config.accountId}.r2.cloudflarestorage.com`,
       credentials: { accessKeyId: config.accessKeyId, secretAccessKey: config.secretAccessKey },
       maxAttempts: 2,
-      requestHandler: { connectionTimeout: 3000, requestTimeout: 10000, throwOnRequestTimeout: true },
+      requestHandler: {
+        connectionTimeout: 3000,
+        requestTimeout: 10000,
+        throwOnRequestTimeout: true,
+      },
       // The browser sends the body after signing; no body checksum can be calculated here.
       requestChecksumCalculation: 'WHEN_REQUIRED',
     });
+  }
+  async checkBuckets(signal: AbortSignal) {
+    await Promise.all([
+      this.client.send(new HeadBucketCommand({ Bucket: this.config.privateBucket }), {
+        abortSignal: signal,
+      }),
+      this.client.send(new HeadBucketCommand({ Bucket: this.config.publicBucket }), {
+        abortSignal: signal,
+      }),
+    ]);
+  }
+  async inspectUpload(id: string, isPublic: boolean, signal: AbortSignal) {
+    const key = this.checkedObjectKey(id);
+    const [pending, completed] = await Promise.all([
+      this.objectExists(this.config.privateBucket, `pending/${id}`, signal),
+      this.objectExists(
+        isPublic ? this.config.publicBucket : this.config.privateBucket,
+        key,
+        signal,
+      ),
+    ]);
+    return { pending, completed };
+  }
+  async inspectWithdrawalObjects(id: string, signal: AbortSignal) {
+    const key = this.checkedObjectKey(id);
+    const [pending, privateCompleted, publicCompleted] = await Promise.all([
+      this.objectExists(this.config.privateBucket, `pending/${id}`, signal),
+      this.objectExists(this.config.privateBucket, key, signal),
+      this.objectExists(this.config.publicBucket, key, signal),
+    ]);
+    return { pending, privateCompleted, publicCompleted };
+  }
+  async publicObjectStatus(id: string, signal: AbortSignal) {
+    const url = new URL(this.config.publicBaseUrl);
+    if (url.protocol !== 'https:' || url.username || url.password || url.search || url.hash)
+      throw new Error('Invalid R2 public base URL');
+    url.pathname = `${url.pathname.replace(/\/$/, '')}/${this.checkedObjectKey(id)}`;
+    const response = await fetch(url, { redirect: 'manual', signal });
+    await response.body?.cancel();
+    return response.status;
+  }
+  private checkedObjectKey(id: string) {
+    if (!/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/.test(id))
+      throw new Error('Invalid upload ID');
+    return `objects/${id}`;
+  }
+  private async objectExists(bucket: string, key: string, signal: AbortSignal) {
+    try {
+      await this.client.send(new HeadObjectCommand({ Bucket: bucket, Key: key }), {
+        abortSignal: signal,
+      });
+      return true;
+    } catch (error) {
+      if ((error as { $metadata?: { httpStatusCode?: number } }).$metadata?.httpStatusCode === 404)
+        return false;
+      throw error;
+    }
   }
   async reserve(input: FileReservation) {
     const key = `pending/${input.id}`;

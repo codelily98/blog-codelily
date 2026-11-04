@@ -13,7 +13,7 @@ export class PostgresUploadsRepository implements UploadRepository {
       ).rows[0] ?? null
     );
   }
-  async reserve(row: UploadRecord) {
+  async reserve(row: UploadRecord & { ownerId: string }) {
     await transaction(this.db, async (connection) => {
       await connection.query('SELECT id FROM "user" WHERE id=$1 FOR UPDATE', [row.ownerId]);
       const recent = await connection.query<{ count: number }>(
