@@ -15,6 +15,82 @@ async function authenticate(context: BrowserContext, role: string) {
     },
   ]);
 }
+test('management pages explain denied access without exposing another author’s post', async ({
+  browser,
+  context,
+  request,
+}) => {
+  test.skip(process.env.CODELILY_AUTH_FIXTURE !== '1', 'Requires isolated fixture sessions.');
+  await authenticate(context, 'owner');
+  const ids: string[] = [];
+  try {
+    for (const status of ['DRAFT', 'PUBLISHED']) {
+      const saved = await context.request.post('/api/posts', {
+        headers: { origin: 'http://localhost:3000' },
+        data: {
+          title: `권한 회귀 ${status}`,
+          slug: `management-denied-${status.toLowerCase()}`,
+          source: '다른 작성자의 편집 화면에 표시되면 안 되는 본문',
+          format: 'MARKDOWN',
+          excerpt: '',
+          tags: [],
+          status,
+          categoryId: null,
+        },
+      });
+      expect(saved.status()).toBe(200);
+      ids.push((await saved.json()).data.id);
+    }
+    for (const role of ['member', 'editor']) {
+      const restrictedContext = await browser.newContext();
+      try {
+        await authenticate(restrictedContext, role);
+        const restricted = await restrictedContext.newPage();
+        const routes =
+          role === 'member'
+            ? ['/manage', '/manage/posts/new']
+            : [
+                '/manage/about',
+                '/manage/users',
+                '/manage/analytics',
+                ...ids.map((id) => `/manage/posts/${id}`),
+              ];
+        for (const route of routes) {
+          await restricted.goto(route);
+          await expect(
+            restricted.getByRole('heading', { name: '페이지를 찾을 수 없습니다.' }),
+          ).toBeVisible();
+          await expect(
+            restricted.getByText('주소가 변경되었거나 이 페이지를 열람할 권한이 없을 수 있습니다.'),
+          ).toBeVisible();
+          await expect(restricted.getByRole('textbox', { name: '제목', exact: true })).toHaveCount(
+            0,
+          );
+          const denied = await restricted.request.get(route);
+          // App Router may have sent the streaming shell before notFound resolves.
+          expect([200, 404]).toContain(denied.status());
+          expect(await denied.text()).toContain('noindex');
+        }
+      } finally {
+        await restrictedContext.close();
+      }
+    }
+    const anonymous = await request.get('/manage', { maxRedirects: 0 });
+    expect([200, 307]).toContain(anonymous.status());
+    if (anonymous.status() === 307) expect(anonymous.headers().location).toBe('/sign-in');
+    else expect(await anonymous.text()).toContain('/sign-in');
+  } finally {
+    for (const id of ids) {
+      expect(
+        (
+          await context.request.delete(`/api/posts/${id}`, {
+            headers: { origin: 'http://localhost:3000' },
+          })
+        ).ok(),
+      ).toBe(true);
+    }
+  }
+});
 test('OWNER: category → Markdown Post → publish → member comment → About → charts/Grid → unpublish', async ({
   browser,
   page,
