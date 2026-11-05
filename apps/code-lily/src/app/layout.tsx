@@ -18,6 +18,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <script
           dangerouslySetInnerHTML={{
             __html:
+              // Run the cancelable editing guard before the client router's listener.
+              `window.addEventListener('popstate', function(event) {
+                const allowed = document.dispatchEvent(
+                  new Event('codelily:before-history', { cancelable: true })
+                );
+                if (!allowed) event.stopImmediatePropagation();
+              }, true);` +
               "try{document.documentElement.dataset.theme=localStorage.getItem('cl-theme')==='light'?'light':'dark'}catch(e){}",
           }}
         />

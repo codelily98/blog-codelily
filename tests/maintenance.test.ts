@@ -10,6 +10,7 @@ test('auth rate-limit maintenance deletes one expired batch with restricted priv
     for (const path of [
       'apps/code-lily/migrations/001_initial.sql',
       'apps/code-lily/migrations/002_rate_limit_retention.sql',
+      'apps/code-lily/migrations/006_work.sql',
     ]) {
       await db.exec(await readFile(path, 'utf8'));
     }

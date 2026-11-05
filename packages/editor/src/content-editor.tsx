@@ -9,11 +9,13 @@ export function ContentEditor({
   onChange,
   format,
   label = '본문 편집',
+  markdownOnly = false,
 }: {
   value: string;
   onChange: (value: string) => void;
   format: ContentFormat;
   label?: string;
+  markdownOnly?: boolean;
 }) {
   const host = useRef<HTMLDivElement>(null);
   const target = useRef<HTMLDivElement>(null);
@@ -42,7 +44,9 @@ export function ContentEditor({
           if (!instance) return;
           const frame = instance.$.frameContext;
           let next: string;
-          if (frame.get('isCodeView')) {
+          if (markdownOnly) {
+            next = frame.get('markdown').value;
+          } else if (frame.get('isCodeView')) {
             const html = frame.get('code').value;
             next =
               format === 'HTML'
@@ -58,8 +62,9 @@ export function ContentEditor({
           current.current = next;
           change.current(next);
         };
-        const initial =
-          format === 'MARKDOWN'
+        const initial = markdownOnly
+          ? ''
+          : format === 'MARKDOWN'
             ? module.helper.markdown.markdownToHtml(current.current)
             : current.current;
         const instance = module.default.create(target.current, {
@@ -94,6 +99,12 @@ export function ContentEditor({
               if (format === 'MARKDOWN') {
                 $.viewer.markdownView(true);
                 $.frameContext.get('markdown').value = current.current;
+              }
+              if (markdownOnly) {
+                // Keep the vendor source surface while preventing HTML round trips.
+                host.current
+                  ?.querySelector<HTMLElement>('.se-toolbar')
+                  ?.style.setProperty('display', 'none', 'important');
               }
               const areas = host.current?.querySelectorAll('textarea') || [];
               areas.forEach((area) => {
@@ -155,7 +166,7 @@ export function ContentEditor({
       editor.current = null;
       if (target.current) target.current.innerHTML = '';
     };
-  }, [format, label]);
+  }, [format, label, markdownOnly]);
   useEffect(() => {
     if (value === current.current) return;
     current.current = value;
@@ -167,8 +178,9 @@ export function ContentEditor({
   return (
     <div className="editor-shell" ref={host} aria-describedby={`${id}-help`}>
       <p id={`${id}-help`} className="mb-3 text-xs leading-5 text-muted">
-        HTML 서식·소스와 Markdown 보기를 지원합니다. 표와 코드 블록을 사용할 수 있습니다. 이미지는
-        아래 R2 업로드를 이용해주세요.
+        {markdownOnly
+          ? 'Markdown 원문을 편집합니다. 표·코드 블록·체크 목록을 지원합니다. Ctrl+S로 즉시 저장할 수 있습니다.'
+          : 'HTML 서식·소스와 Markdown 보기를 지원합니다. 표와 코드 블록을 사용할 수 있습니다. 이미지는 아래 R2 업로드를 이용해주세요.'}
       </p>
       {!ready && !error ? (
         <p role="status" className="py-3 text-sm text-muted">

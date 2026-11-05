@@ -5,4 +5,5 @@ REVOKE INSERT, UPDATE, DELETE ON blog_schema.schema_migrations FROM code_lily_ru
 GRANT SELECT, DELETE ON blog_schema.telemetry_events, blog_schema.audit_logs,
   blog_schema.session, blog_schema.verification TO code_lily_maintenance;
 GRANT SELECT (id, "lastRequest"), DELETE ON blog_schema."rateLimit" TO code_lily_maintenance;
+GRANT EXECUTE ON FUNCTION blog_schema.prune_work_trash() TO code_lily_maintenance;
 COMMIT;

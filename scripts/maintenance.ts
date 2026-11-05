@@ -13,6 +13,7 @@ try {
     'DELETE FROM session WHERE id IN (SELECT id FROM session WHERE "expiresAt"<now() LIMIT 5000)',
     'DELETE FROM verification WHERE id IN (SELECT id FROM verification WHERE "expiresAt"<now() LIMIT 5000)',
     pruneAuthRateLimit,
+    'SELECT blog_schema.prune_work_trash()',
   ];
   for (const command of commands) await db.query(command);
   console.log('Bounded retention maintenance completed.');

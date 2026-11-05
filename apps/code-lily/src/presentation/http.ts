@@ -76,7 +76,10 @@ export async function api(
         }),
       );
     return Response.json(
-      { error: { message }, requestId },
+      {
+        error: { message, code: error instanceof AppError ? error.code : 'REQUEST_FAILED' },
+        requestId,
+      },
       { status, headers: { 'Cache-Control': 'private, no-store', 'X-Request-Id': requestId } },
     );
   }

@@ -36,6 +36,15 @@ export function SiteHeader() {
             <span>code-lily</span>
           </Link>
           <nav aria-label="주 메뉴" className="hidden items-center gap-1 sm:flex">
+            {actor ? (
+              <Link
+                href="/work"
+                aria-current={pathname.startsWith('/work') ? 'page' : undefined}
+                className="flex min-h-11 items-center rounded-lg px-3 text-sm font-semibold"
+              >
+                Work
+              </Link>
+            ) : null}
             <Link
               href="/posts"
               aria-current={pathname === '/' || pathname.startsWith('/posts') ? 'page' : undefined}
@@ -84,6 +93,15 @@ export function SiteHeader() {
         </div>
         <div className="mx-auto flex max-w-[1168px] items-center border-t border-line px-5 sm:hidden">
           <nav aria-label="주 메뉴" className="mr-auto flex items-center gap-1">
+            {actor ? (
+              <Link
+                href="/work"
+                aria-current={pathname.startsWith('/work') ? 'page' : undefined}
+                className="flex min-h-11 items-center px-3 text-sm font-semibold"
+              >
+                Work
+              </Link>
+            ) : null}
             <Link href="/posts" className="flex min-h-11 items-center px-3 text-sm font-semibold">
               Posts
             </Link>
