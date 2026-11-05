@@ -4,6 +4,7 @@ import { writeFile, mkdir } from 'node:fs/promises';
 import { getAuth } from '../apps/code-lily/src/modules/identity/infrastructure/auth';
 import { getDatabase } from '../apps/code-lily/src/infrastructure/database';
 import { makeSignature } from 'better-auth/crypto';
+import { randomUUID } from 'node:crypto';
 if (process.env.CODELILY_AUTH_FIXTURE !== '1')
   throw new Error('Explicit test fixture mode required.');
 const auth = await getAuth();
@@ -16,12 +17,11 @@ try {
     ['editor', 'editor@fixture.invalid', 'EDITOR'],
     ['member', 'member@fixture.invalid', 'MEMBER'],
   ]) {
-    const user = await context.internalAdapter.createUser({
-      name: `Fixture ${key}`,
-      email,
-      emailVerified: true,
-    });
-    await db.query('UPDATE "user" SET role=$1 WHERE id=$2', [role, user.id]);
+    const user = { id: randomUUID() };
+    await db.query(
+      'INSERT INTO "user" (id,name,email,"emailVerified",role,"createdAt","updatedAt") VALUES ($1,$2,$3,true,$4,now(),now())',
+      [user.id, `Fixture ${key}`, email, role],
+    );
     const session = await context.internalAdapter.createSession(user.id);
     if (!session) throw new Error('Fixture session creation failed');
     result[key] = {

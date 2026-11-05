@@ -4,6 +4,7 @@ import { createAuthClient } from 'better-auth/react';
 import type { Actor } from '../domain/policy';
 import { Button, Dialog, useToast } from '@codelily/ui';
 import { LogIn, LogOut } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 const authClient = createAuthClient();
 const SessionContext = createContext<{
   actor: Actor | null;
@@ -38,7 +39,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   return <SessionContext value={state}>{children}</SessionContext>;
 }
 export const useSession = () => useContext(SessionContext);
-export function GoogleLoginButton() {
+export function GoogleLoginButton({ ageConfirmed }: { ageConfirmed?: boolean }) {
+  const router = useRouter();
   const { actor, configured, loading } = useSession();
   const [setup, setSetup] = useState(false);
   const toast = useToast();
@@ -60,10 +62,14 @@ export function GoogleLoginButton() {
     <>
       <Button
         variant="secondary"
-        className="max-sm:w-11 max-sm:px-0"
+        className={ageConfirmed === undefined ? 'max-sm:w-11 max-sm:px-0' : undefined}
         aria-label="Google 로그인"
-        disabled={loading}
+        disabled={loading || ageConfirmed === false}
         onClick={async () => {
+          if (ageConfirmed !== true) {
+            router.push('/sign-in');
+            return;
+          }
           if (!configured) {
             setSetup(true);
             return;
@@ -71,12 +77,16 @@ export function GoogleLoginButton() {
           const result = await authClient.signIn.social({
             provider: 'google',
             callbackURL: window.location.origin,
+            errorCallbackURL: `${window.location.origin}/sign-in?error=login`,
+            additionalData: { ageOver14: true },
           });
           if (result.error) toast('Google 로그인에 실패했습니다. 잠시 후 다시 시도해주세요.');
         }}
       >
         <LogIn size={16} />
-        <span className="hidden sm:inline">Google 로그인</span>
+        <span className={ageConfirmed === undefined ? 'hidden sm:inline' : undefined}>
+          Google 로그인
+        </span>
       </Button>
       <Dialog open={setup} onClose={() => setSetup(false)} title="Google 로그인 설정">
         <p className="text-sm leading-7 text-muted">
