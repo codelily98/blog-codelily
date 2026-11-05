@@ -8,6 +8,9 @@ test('sign-in requires an age declaration before Google redirect; policy review 
 }) => {
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(error.message));
+  page.on('console', (message) => {
+    if (message.type() === 'error' || message.type() === 'warning') errors.push(message.text());
+  });
   await page.goto('/sign-in?error=login');
   await expect(page.getByRole('main').getByRole('alert')).toContainText(
     '로그인을 완료하지 못했습니다',
@@ -50,6 +53,7 @@ test('sign-in requires an age declaration before Google redirect; policy review 
     for (const route of ['/privacy', '/terms', '/sign-in']) {
       await page.goto(route);
       await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+      await expect(page.locator('nextjs-portal')).toHaveCount(0);
       if (route === '/sign-in')
         await expect(
           page.getByRole('main').getByText('Google 로그인', { exact: true }),
