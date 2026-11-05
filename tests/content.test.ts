@@ -24,3 +24,15 @@ test('GFM renders headings, tables, code and lists safely', async () => {
   assert.match(html, /<li>항목<\/li>/);
   assert.doesNotMatch(html, /<script>/);
 });
+test('task list completion survives sanitization and Work can exclude remote images', async () => {
+  const source = '- [ ] pending\n- [x] done\n\n![remote](https://example.com/private.png)';
+  const normal = await renderContent(source, 'MARKDOWN');
+  assert.equal((normal.match(/checked="checked"/g) ?? []).length, 1);
+  assert.equal((normal.match(/disabled="disabled"/g) ?? []).length, 2);
+  assert.match(normal, /aria-label="완료된 할 일"/);
+  assert.match(normal, /aria-label="미완료 할 일"/);
+  assert.match(normal, /<img/);
+  const work = await renderContent(source, 'MARKDOWN', { allowImages: false });
+  assert.doesNotMatch(work, /<img/);
+  assert.match(work, /checked="checked"/);
+});

@@ -96,7 +96,13 @@ export function DataGrid<T extends { id: string }>({
         </p>
       ) : null}
       {accessible ? (
-        <div key="accessible" className="max-h-96 overflow-auto">
+        <div
+          key="accessible"
+          className="max-h-96 overflow-auto"
+          tabIndex={0}
+          role="region"
+          aria-label={`${title} 표 스크롤 영역`}
+        >
           <table className="w-full text-left text-sm">
             <caption className="sr-only">{title}</caption>
             <thead>
