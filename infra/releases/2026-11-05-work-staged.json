@@ -1,0 +1,31 @@
+{
+  "release": "work-220bf7951132",
+  "state": "activated",
+  "sourceBaseCommit": "d27010cdd5b20a482480682beefe3c2130406fe7",
+  "sourceSnapshotSha256": "220bf7951132b297d852bcc235f7fa183d84d13415a41a5301f59d4728ef8f44",
+  "platform": "linux/amd64",
+  "delivery": "docker-save-scp-load",
+  "images": {
+    "blog": "sha256:12dd63af23cd0203abe7888ffc7f72ee3f1a89f1f689bb1fd1d1e693499c191f",
+    "migrator": "sha256:f3d794e7ec53f4784fce4c631d52a086f19dbb724e1200d1a4ecbc4a7dab4fe4"
+  },
+  "archiveSha256": {
+    "codelily-work-linux-amd64.tar": "986e2eaeb542599a1d005a20877741d3f1eeedc219ad85b050e23ab5cb6db67a",
+    "source.tar.gz": "34cdfae64e61d2f06dabf381dd1a8b738ed14bef8df55981f822717d9212873e",
+    "post-migration.sql": "2e46a047607db5794c079e290e08dd2f936a4f2e32936b4b08378ac9c18c8e05",
+    "006_work.sql": "5b747f9ed7bb027ae5e35a0c05423d9c09386139a29f700ce746381af04acd3f"
+  },
+  "rollbackReference": "2026-11-04-withdrawal-active.json",
+  "preDeploymentEncryptedSnapshot": "20261105T060153Z",
+  "migrationTarget": "006_work.sql",
+  "validation": {
+    "linuxBuild": true,
+    "postgresMajor": 16,
+    "postgresMigrationAndRoles": true,
+    "postgresConcurrency": true,
+    "chromeE2E": 7,
+    "automatedAccessibilityViolations": 0
+  },
+  "activatedAt": "2026-11-05T15:16:56+09:00",
+  "activeReleaseManifest": "2026-11-05-work-active.json"
+}
