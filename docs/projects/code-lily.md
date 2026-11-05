@@ -38,6 +38,8 @@
 
 ## 다음 시작점
 
+2026-11-05 후속 정리: 공통 보완 `c3093c6`·Work `0276493`·배포 기록 `b7de3b8`을 원격 `main`에 반영했다. 타입·경계·테스트 23개·빌드를 다시 통과했다. 운영 maintenance는 대상 0건 확인 후 15:34:24 KST에 수동 성공했으며 백업·정리 timer와 PC 수신 작업이 활성 상태다. 다음 예약 실행 결과와 장기 보존은 미확인이다. [Work 정책 추가 검토안과 실계정 인수표](../operations/Google-OAuth-공개준비.md#2026-11-05-후속-상태와-work-반영안)를 작성했다. 실계정·브라우저 재연결·운영 정책 결정 답변을 기다리며 Google 게시와 실제 MEMBER/EDITOR 인수는 대기다.
+
 2026-11-05 Work 운영 전환 완료. 사용자 승인 후 `work-220bf7951132`를 15:16:56 KST에 활성화했다. 운영 006·최소 권한·동일 앱/maintenance 이미지와 전환 전후 암호화 외부 복구 지점을 확인했다. 공개 HTTPS·캐시·익명/교차 Origin 거절·기존 OWNER Work 화면 진입을 검증했다. [활성 명세](../../infra/releases/2026-11-05-work-active.json)를 기준으로 신규 MEMBER/EDITOR Google 실계정 인수와 보존 예약 장기 관측을 이어간다.
 
 2026-11-05 Work MVP의 구현·로컬 검증을 완료했다. 운영 적용 시 [Work 계약](../architecture/Work-계약.md)의 006 migration·최소 권한·앱과 maintenance 전환 순서를 따른다. 기존 Google 일반 공개 준비와 실제 회원 인수도 이어서 확인한다.
