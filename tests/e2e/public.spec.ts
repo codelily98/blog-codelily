@@ -2,6 +2,55 @@ import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import path from 'node:path';
 
+test('public homepage explains the service and links the same policy and login pages', async ({
+  page,
+}) => {
+  const errors: string[] = [];
+  page.on('pageerror', (error) => errors.push(error.message));
+  page.on('console', (message) => {
+    if (message.type() === 'error' || message.type() === 'warning') errors.push(message.text());
+  });
+  for (const viewport of [
+    { width: 1440, height: 1100 },
+    { width: 390, height: 844 },
+  ]) {
+    await page.setViewportSize(viewport);
+    const response = await page.goto('/');
+    expect(response?.status()).toBe(200);
+    await expect(page).toHaveURL('http://localhost:3000/');
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(
+      '기술을 배우고, 기록하고, 나누는 공간',
+    );
+    const main = page.getByRole('main');
+    for (const [name, href] of [
+      ['Posts 글 보기', '/posts'],
+      ['About 소개 보기', '/about'],
+      ['Work 문서 보기', '/work'],
+      ['개인정보처리방침', '/privacy'],
+      ['이용약관', '/terms'],
+      ['Google 로그인 안내', '/sign-in'],
+    ])
+      await expect(
+        main.getByRole('link', { name, exact: name === '개인정보처리방침' || name === '이용약관' }),
+      ).toHaveAttribute('href', href);
+    const audit = await new AxeBuilder({ page })
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa'])
+      .analyze();
+    expect(audit.violations).toEqual([]);
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
+    ).toBe(true);
+    if (process.env.CODELILY_EVIDENCE_DIR)
+      await page.screenshot({
+        path: path.join(process.env.CODELILY_EVIDENCE_DIR, `public-home-${viewport.width}.png`),
+        fullPage: true,
+      });
+    await main.getByRole('link', { name: 'Google 로그인 안내', exact: true }).click();
+    await expect(page.getByRole('heading', { name: 'Google 계정으로 시작하기' })).toBeVisible();
+  }
+  expect(errors).toEqual([]);
+});
+
 test('sign-in requires an age declaration before Google redirect; policy review is accessible', async ({
   page,
   request,

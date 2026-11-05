@@ -1,5 +1,13 @@
 # code-lily 일반 회원 공개 준비
 
+## 2026-11-05 공개 홈·실계정 인수·계약 확인 후속
+
+- Google 공식 브랜딩 지침에 맞춰 루트에 서비스 기능을 설명하고 같은 정책·로그인 URL을 연결하는 공개 홈을 구현했다. [브랜딩 요구](https://support.google.com/cloud/answer/15549049?hl=en)
+- 배포된 연령 자기 확인 이후 지정 회원이 실제 Google 왕복 로그인을 완료했다. MEMBER 댓글 작성과 지정 계정의 EDITOR 복원 후 자기 초안 CRUD·자기 댓글 삭제, 타인 글·OWNER 기능 차단을 관찰했다. OWNER 권한은 유지했고 승인된 합성 콘텐츠 3개는 정리했다. 회원 식별 정보는 기록하지 않는다.
+- 명시 승인 후 Google Data Access에 실제 요청과 동일한 기본 범위 3개만 저장했고 저장 완료 알림을 확인했다. 민감·제한 범위는 없다. Audience는 External·Testing이며 일반 게시·브랜드 검증과 구분한다. Testing의 기본 신원 범위 예외로 테스트 목록 밖의 지정 계정도 로그인했으며 일반 게시 성공으로 해석하지 않는다. [운영 준비](https://developers.google.com/identity/protocols/oauth2/production-readiness/overview)
+- Cloudflare 실제 계정의 구성 화면은 데이터 처리 부록이 셀프 서비스 구독 계약과 표준 Enterprise 계약에 포함된다고 표시했다. 개별 서명·동의 이력은 표시하지 않았고 추가 법적 동의는 수행하지 않았다. 공개 [DPA v6.4](https://www.cloudflare.com/cloudflare-customer-dpa/)의 시행일은 2026-04-03이며 공개 문서와 계정 안내를 개별 서명 증거와 구분한다.
+- R2 APAC/default만으로 정확한 처리 국가를 확정하거나 한국 국외 이전 근거가 충족됐다고 주장하지 않는다. 정책은 검토본을 유지한다. iwinv 실제 적용 계약·접근 범위와 Cloudflare·Google의 실제 이전 국가·근거·고지 항목을 확인해 문안을 확정한 뒤 Google 일반 게시와 브랜드 검증을 진행한다. [개인정보 보호법 제28조의8](https://www.law.go.kr/법령/개인정보보호법/제28조의8)
+
 ## 2026-11-05 회원 정책·가입 연령 운영 배포
 
 운영자 요청으로 아래 검토 문구와 서버 가입 보호를 `membership-ba1801ade6df`에 포함해 16:39:01 KST에 운영 반영했다. [최신 활성 명세](../../infra/releases/2026-11-05-membership-active.json)를 따른다. 이번 배포에서 DB 스키마·회원 역할·기존 문서를 변경하지 않았다. 이전 절의 ‘운영 미배포’ 설명은 빌드·인수 당시의 이력이다.
