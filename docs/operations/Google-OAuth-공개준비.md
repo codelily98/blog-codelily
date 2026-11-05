@@ -2,6 +2,8 @@
 
 ## 2026-11-05 공개 홈·실계정 인수·계약 확인 후속
 
+공개 홈·관리 권한 안내는 `membership-c2ea35c74904`로 20:28:48 KST 운영 반영했다. [활성 명세](../../infra/releases/2026-11-05-public-home-active.json)의 Linux 24개 서버/SQL·Chrome 10개 검사와 외부 HTTPS·실계정 세션 검증을 따르며 DB 스키마는 변경하지 않았다. 정책 확정이나 Google 일반 게시를 포함한 배포로 해석하지 않는다.
+
 - Google 공식 브랜딩 지침에 맞춰 루트에 서비스 기능을 설명하고 같은 정책·로그인 URL을 연결하는 공개 홈을 구현했다. [브랜딩 요구](https://support.google.com/cloud/answer/15549049?hl=en)
 - 배포된 연령 자기 확인 이후 지정 회원이 실제 Google 왕복 로그인을 완료했다. MEMBER 댓글 작성과 지정 계정의 EDITOR 복원 후 자기 초안 CRUD·자기 댓글 삭제, 타인 글·OWNER 기능 차단을 관찰했다. OWNER 권한은 유지했고 승인된 합성 콘텐츠 3개는 정리했다. 회원 식별 정보는 기록하지 않는다.
 - 명시 승인 후 Google Data Access에 실제 요청과 동일한 기본 범위 3개만 저장했고 저장 완료 알림을 확인했다. 민감·제한 범위는 없다. Audience는 External·Testing이며 일반 게시·브랜드 검증과 구분한다. Testing의 기본 신원 범위 예외로 테스트 목록 밖의 지정 계정도 로그인했으며 일반 게시 성공으로 해석하지 않는다. [운영 준비](https://developers.google.com/identity/protocols/oauth2/production-readiness/overview)

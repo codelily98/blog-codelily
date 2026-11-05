@@ -1,0 +1,108 @@
+{
+  "release": "membership-c2ea35c74904",
+  "state": "production-active",
+  "platform": "linux/amd64",
+  "delivery": "docker-save-scp-load",
+  "sourceCommit": "c129f71870bf046c2767132a4ad6d657e7ce90fd",
+  "sourceSnapshotSha256": "c2ea35c74904ab6f9581bcab33a4f6f716068eb73042b450d13aa1d7b8d7ae94",
+  "sourceFiles": 179,
+  "nodeImage": "node@sha256:c86ecead9e55a5210ac1727de38a4ca840bf03dcaf34dc9749addbf383b1920c",
+  "images": {
+    "blog": "sha256:9e61ce7d8563b6511d0177ded7b70cc3ccc3e031ae56777d643b2ca0d1348362",
+    "migrator": "sha256:20e602437ceb9bbae0fafee71ec4fc4b690dc36bf076c95d1d6bd2dbc94ea1c1"
+  },
+  "previousImages": {
+    "blog": "sha256:729bb9fe826d059ff57fd012b606feccf0d6970fc1bdf7b7c2dc46045c179e03",
+    "migrator": "sha256:14e646a8efb2e3593c7ca4d3e0499c078dfc5fed02797f30a88602fb5e481091"
+  },
+  "migrationChanges": false,
+  "migrationAppliedThrough": "006_work.sql",
+  "migrationVersions": [
+    "001_initial.sql",
+    "002_rate_limit_retention.sql",
+    "003_member_withdrawal.sql",
+    "004_withdrawn_post_visibility.sql",
+    "005_withdrawal_upload_settlement.sql",
+    "006_work.sql"
+  ],
+  "unchangedConfiguration": {
+    "infra/compose.production.yml": "56d6cbf0f1162baaef125f51f171d81fb2dd0c1063d22aa034c185aba9f316d7",
+    "infra/postgres/post-migration.sql": "2e46a047607db5794c079e290e08dd2f936a4f2e32936b4b08378ac9c18c8e05",
+    "apps/code-lily/migrations/001_initial.sql": "dbf0e2a50b5771fea8dc3477126d3ed2cbf2327f8315a1b32bc8bc34e27da2df",
+    "apps/code-lily/migrations/002_rate_limit_retention.sql": "dd5e9ea3ca6cf22a4cd139dcaf2e8c3c16eb8a63887fe24d350032f3ce8456ad",
+    "apps/code-lily/migrations/003_member_withdrawal.sql": "7940e017015ddcbe3c6afeb68a1e8c26edbc84f5635e784909a44efd3340f4e5",
+    "apps/code-lily/migrations/004_withdrawn_post_visibility.sql": "e2e8dab70866e9ec02f508b8775388360091d9187c08023903d8731065865216",
+    "apps/code-lily/migrations/005_withdrawal_upload_settlement.sql": "ae134c35ee60995ead479788d4b89694a72e47c813a34f5a8a00fee490e9f367",
+    "apps/code-lily/migrations/006_work.sql": "5b747f9ed7bb027ae5e35a0c05423d9c09386139a29f700ce746381af04acd3f"
+  },
+  "policyStatus": "public-review-draft",
+  "preDeploymentEncryptedSnapshot": "20261105T112433Z",
+  "rollbackReference": "2026-11-05-membership-active.json",
+  "archiveBytes": 453278208,
+  "sha256": {
+    "codelily-membership-linux-amd64.tar": "55ab21c149ba5cc00a3f151312d1b54bbe47eef677c8d9adfde4acc9774dca8f",
+    "source.tar.gz": "fd30a26bfe5163b7785d6deda813e176f53eb26a173562a3c6f9fa8d56766349",
+    "apply-membership-release.py": "c2b737c47cc2f73fd3b267702d2d7d07152790893ea32624651a3cfc45d72622"
+  },
+  "validation": {
+    "linuxBuild": true,
+    "typecheck": true,
+    "boundaries": true,
+    "unitAndSqlTests": 24,
+    "postgresMajor": 16,
+    "postgresRuntimeE2E": true,
+    "chromeE2E": 10,
+    "automatedAccessibilityViolations": 0,
+    "viewports": [
+      "1440x1100",
+      "390x844"
+    ]
+  },
+  "activatedAt": "2026-11-05T20:28:48+09:00",
+  "externalSnapshotVerified": true,
+  "postDeploymentEncryptedSnapshot": "20261105T112914Z",
+  "preDeploymentEncryptedSnapshotVerifiedOffHost": true,
+  "postDeploymentEncryptedSnapshotVerifiedOffHost": true,
+  "productionVerification": {
+    "checkedAt": "2026-11-05T11:29:06.800Z",
+    "pages": {
+      "/": 200,
+      "/health/ready": 200,
+      "/posts": 200,
+      "/about": 200,
+      "/privacy": 200,
+      "/terms": 200,
+      "/sign-in": 200
+    },
+    "anonymousApis": {
+      "/api/work/tree": 401,
+      "/api/work/search?q=acceptance": 401,
+      "/api/work/trash": 401
+    },
+    "publicServiceHome": true,
+    "ssrAgeDeclaration": true,
+    "hashedCssCdnHit": true,
+    "anonymousWorkSignIn": true,
+    "privateNoStore": true,
+    "ageDeclarationServerRejection": 400,
+    "crossOriginWriteStatus": 403,
+    "internalPublicStatus": 404,
+    "neighborStatus": 200,
+    "syntheticPostsUnavailable": true,
+    "appHealth": "healthy",
+    "appRestartCount": 0,
+    "existingEditorSessionManageOpened": true,
+    "ownerOnlyPageDenied": true,
+    "browserPostDeploymentWarningsObserved": 0,
+    "browserPostDeploymentErrorsObserved": 0,
+    "preDeploymentGenericPermissionReactErrorsObserved": 3,
+    "backupTimer": "active",
+    "maintenanceTimer": "active",
+    "schemaAndPrivilegeChecks": "passed",
+    "googleOAuthNewRoundTrip": "verified-before-image-switch",
+    "googleBasicScopeRegistration": "saved",
+    "googlePublishingChanged": false,
+    "realPostsAcceptance": "passed-and-synthetic-content-cleaned",
+    "testAccountFinalRole": "EDITOR"
+  }
+}
