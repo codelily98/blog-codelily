@@ -39,7 +39,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   return <SessionContext value={state}>{children}</SessionContext>;
 }
 export const useSession = () => useContext(SessionContext);
-export function GoogleLoginButton({ ageConfirmed }: { ageConfirmed?: boolean }) {
+export function GoogleLoginButton(
+  props: { intent?: 'entry' | 'login' } | { intent: 'signup'; confirmed: boolean },
+) {
+  const { intent = 'entry' } = props;
+  const label = intent === 'signup' ? 'Google로 가입하기' : 'Google 로그인';
   const router = useRouter();
   const { actor, configured, loading } = useSession();
   const [setup, setSetup] = useState(false);
@@ -62,11 +66,11 @@ export function GoogleLoginButton({ ageConfirmed }: { ageConfirmed?: boolean }) 
     <>
       <Button
         variant="secondary"
-        className={ageConfirmed === undefined ? 'max-sm:w-11 max-sm:px-0' : undefined}
-        aria-label="Google 로그인"
-        disabled={loading || ageConfirmed === false}
+        className={intent === 'entry' ? 'max-sm:w-11 max-sm:px-0' : undefined}
+        aria-label={label}
+        disabled={loading || (props.intent === 'signup' && !props.confirmed)}
         onClick={async () => {
-          if (ageConfirmed !== true) {
+          if (intent === 'entry') {
             router.push('/sign-in');
             return;
           }
@@ -77,16 +81,19 @@ export function GoogleLoginButton({ ageConfirmed }: { ageConfirmed?: boolean }) 
           const result = await authClient.signIn.social({
             provider: 'google',
             callbackURL: window.location.origin,
-            errorCallbackURL: `${window.location.origin}/sign-in?error=login`,
-            additionalData: { ageOver14: true },
+            errorCallbackURL: `${window.location.origin}/sign-in${intent === 'signup' ? '?mode=signup' : ''}`,
+            ...(intent === 'signup'
+              ? { requestSignUp: true, additionalData: { ageOver14: true, termsAccepted: true } }
+              : {}),
           });
-          if (result.error) toast('Google 로그인에 실패했습니다. 잠시 후 다시 시도해주세요.');
+          if (result.error)
+            toast(
+              `Google ${intent === 'signup' ? '가입' : '로그인'}에 실패했습니다. 다시 시도해 주세요.`,
+            );
         }}
       >
         <LogIn size={16} />
-        <span className={ageConfirmed === undefined ? 'hidden sm:inline' : undefined}>
-          Google 로그인
-        </span>
+        <span className={intent === 'entry' ? 'hidden sm:inline' : undefined}>{label}</span>
       </Button>
       <Dialog open={setup} onClose={() => setSetup(false)} title="Google 로그인 설정">
         <p className="text-sm leading-7 text-muted">

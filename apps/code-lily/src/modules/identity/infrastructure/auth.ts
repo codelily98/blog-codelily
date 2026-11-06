@@ -9,7 +9,7 @@ import {
   createAuthMiddleware,
   getOAuthState,
 } from 'better-auth/api';
-import { hasAgeDeclaration, membershipDeclarationVersion } from '../domain/membership';
+import { hasSignupDeclaration, membershipDeclarationVersion } from '../domain/membership';
 
 export function googleConfigured() {
   return Boolean(
@@ -41,6 +41,7 @@ async function createAuth() {
         clientId: process.env.GOOGLE_CLIENT_ID!,
         clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
         prompt: 'select_account',
+        disableImplicitSignUp: true,
       },
     },
     user: {
@@ -57,9 +58,11 @@ async function createAuth() {
     rateLimit: { enabled: true, storage: 'database', window: 60, max: 60 },
     hooks: {
       before: createAuthMiddleware(async (context) => {
-        if (context.path !== '/sign-in/social') return;
-        if (!hasAgeDeclaration(context.body?.additionalData))
-          throw new APIError('BAD_REQUEST', { message: '만 14세 이상 확인 후 로그인해 주세요.' });
+        if (context.path !== '/sign-in/social' || context.body?.requestSignUp !== true) return;
+        if (!hasSignupDeclaration(context.body.additionalData))
+          throw new APIError('BAD_REQUEST', {
+            message: '가입하려면 만 14세 이상임을 확인하고 이용약관에 동의해 주세요.',
+          });
         await addOAuthServerContext({ membershipDeclaration: membershipDeclarationVersion });
       }),
     },
@@ -69,7 +72,9 @@ async function createAuth() {
           before: async (user) => {
             const state = await getOAuthState();
             if (state?.serverContext?.membershipDeclaration !== membershipDeclarationVersion)
-              throw new APIError('FORBIDDEN', { message: '가입 연령 확인을 다시 진행해 주세요.' });
+              throw new APIError('FORBIDDEN', {
+                message: '가입 화면에서 연령 확인과 이용약관 동의를 다시 진행해 주세요.',
+              });
             return {
               data: {
                 ...user,

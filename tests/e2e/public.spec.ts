@@ -46,14 +46,13 @@ test('public homepage explains the service and links the same policy and login p
         fullPage: true,
       });
     await main.getByRole('link', { name: 'Google 로그인 안내', exact: true }).click();
-    await expect(page.getByRole('heading', { name: 'Google 계정으로 시작하기' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Google 계정으로 로그인' })).toBeVisible();
   }
   expect(errors).toEqual([]);
 });
 
-test('sign-in requires an age declaration before Google redirect; policy review is accessible', async ({
+test('Google login skips consent and signup requires both declarations; policy review is accessible', async ({
   page,
-  request,
 }) => {
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(error.message));
@@ -64,42 +63,58 @@ test('sign-in requires an age declaration before Google redirect; policy review 
   await expect(page.getByRole('main').getByRole('alert')).toContainText(
     '로그인을 완료하지 못했습니다',
   );
-  const login = page.getByRole('main').getByRole('button', { name: 'Google 로그인', exact: true });
-  await expect(login).toBeDisabled();
-  await page.getByRole('checkbox', { name: '만 14세 이상입니다.' }).focus();
-  await page.keyboard.press('Space');
+  const main = page.getByRole('main');
+  const login = main.getByRole('button', { name: 'Google 로그인', exact: true });
   await expect(login).toBeEnabled();
-  await page.getByRole('checkbox', { name: '만 14세 이상입니다.' }).uncheck();
-  await expect(login).toBeDisabled();
+  await expect(main.getByRole('checkbox')).toHaveCount(0);
+  await page.route('https://accounts.google.com/**', (route) =>
+    route.fulfill({ contentType: 'text/html', body: '<title>Google OAuth fixture</title>' }),
+  );
   if (process.env.CODELILY_AUTH_FIXTURE === '1') {
-    for (const additionalData of [
-      undefined,
-      { ageOver14: 'true', serverContext: { membershipDeclaration: '2026-11-05' } },
-    ]) {
-      const result = await request.post('/api/auth/sign-in/social', {
-        headers: { origin: 'http://localhost:3000' },
-        data: { provider: 'google', callbackURL: 'http://localhost:3000', additionalData },
-      });
-      expect(result.status()).toBe(400);
-    }
-    const allowed = await request.post('/api/auth/sign-in/social', {
-      headers: { origin: 'http://localhost:3000' },
-      data: {
-        provider: 'google',
-        callbackURL: 'http://localhost:3000',
-        additionalData: { ageOver14: true },
-      },
-    });
-    expect(allowed.status()).toBe(200);
-    const { url } = await allowed.json();
-    expect(new URL(url).hostname).toBe('accounts.google.com');
+    const loginRequest = page.waitForRequest('**/api/auth/sign-in/social');
+    await login.click();
+    const payload = (await loginRequest).postDataJSON();
+    expect(payload.provider).toBe('google');
+    expect(payload).not.toHaveProperty('requestSignUp');
+    expect(payload).not.toHaveProperty('additionalData');
+    await expect(page).toHaveURL(/^https:\/\/accounts\.google\.com\//);
   }
+  await page.goto('/sign-in');
+  await main.getByRole('link', { name: '처음이신가요? 회원가입' }).click();
+  await expect(page).toHaveURL(/\/sign-in\?mode=signup$/);
+  const signup = main.getByRole('button', { name: 'Google로 가입하기', exact: true });
+  const age = main.getByRole('checkbox', { name: '만 14세 이상입니다.' });
+  const terms = main.getByRole('checkbox', { name: '이용약관에 동의합니다.' });
+  await expect(signup).toBeDisabled();
+  await age.press('Space');
+  await expect(signup).toBeDisabled();
+  await terms.press('Space');
+  await expect(signup).toBeEnabled();
+  await age.uncheck();
+  await expect(signup).toBeDisabled();
+  await age.check();
+  if (process.env.CODELILY_AUTH_FIXTURE === '1') {
+    const signupRequest = page.waitForRequest('**/api/auth/sign-in/social');
+    await signup.click();
+    expect((await signupRequest).postDataJSON()).toMatchObject({
+      provider: 'google',
+      requestSignUp: true,
+      additionalData: { ageOver14: true, termsAccepted: true },
+    });
+    await expect(page).toHaveURL(/^https:\/\/accounts\.google\.com\//);
+  }
+  await page.goto('/sign-in?error=signup_disabled');
+  await expect(main.getByRole('alert')).toContainText('가입되지 않은 Google 계정');
+  await expect(signup).toBeDisabled();
+  await main.getByRole('link', { name: '이미 회원이신가요? 로그인' }).click();
+  await expect(login).toBeEnabled();
+
   for (const viewport of [
     { width: 1440, height: 1100 },
     { width: 390, height: 844 },
   ]) {
     await page.setViewportSize(viewport);
-    for (const route of ['/privacy', '/terms', '/sign-in']) {
+    for (const route of ['/privacy', '/terms', '/sign-in', '/sign-in?mode=signup']) {
       await page.goto(route);
       await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
       await expect(page.locator('nextjs-portal')).toHaveCount(0);
@@ -107,6 +122,15 @@ test('sign-in requires an age declaration before Google redirect; policy review 
         await expect(
           page.getByRole('main').getByText('Google 로그인', { exact: true }),
         ).toBeVisible();
+      if (route === '/sign-in?mode=signup') {
+        await expect(main.getByRole('link', { name: '이용약관', exact: true })).toHaveAttribute(
+          'href',
+          '/terms',
+        );
+        await expect(age).not.toBeChecked();
+        await expect(terms).not.toBeChecked();
+        await expect(signup).toBeDisabled();
+      }
       const audit = await new AxeBuilder({ page })
         .withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa'])
         .analyze();
@@ -119,11 +143,11 @@ test('sign-in requires an age declaration before Google redirect; policy review 
         await expect(page.locator('time')).toHaveAttribute('datetime', '2026-11-05');
         await expect(page.getByText('공개 전 검토본', { exact: true })).toBeVisible();
       }
-      if (process.env.CODELILY_EVIDENCE_DIR && route === '/sign-in')
+      if (process.env.CODELILY_EVIDENCE_DIR && route.startsWith('/sign-in'))
         await page.screenshot({
           path: path.join(
             process.env.CODELILY_EVIDENCE_DIR,
-            `membership-login-${viewport.width}.png`,
+            `membership-${route.includes('signup') ? 'signup' : 'login'}-${viewport.width}.png`,
           ),
           fullPage: true,
         });

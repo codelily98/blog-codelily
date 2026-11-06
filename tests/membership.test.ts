@@ -4,9 +4,9 @@ import { readFile } from 'node:fs/promises';
 import { PGlite } from '@electric-sql/pglite';
 import { runWithRequestState } from '@better-auth/core/context';
 import { EmbeddedPool, type Database } from '../apps/code-lily/src/infrastructure/database';
-import { hasAgeDeclaration } from '../apps/code-lily/src/modules/identity/domain/membership';
+import { membershipDeclarationVersion } from '../apps/code-lily/src/modules/identity/domain/membership';
 
-test('Google signup cannot create a user without a server-bound age declaration', async () => {
+test('Google requires server-bound consent only when creating a member', async () => {
   const engine = await PGlite.create();
   const globals = globalThis as unknown as { codeLilyDatabase?: Promise<Database> };
   await engine.exec('CREATE SCHEMA blog_schema');
@@ -29,12 +29,9 @@ test('Google signup cannot create a user without a server-bound age declaration'
           emailVerified: true,
         }),
       ),
-      { message: '가입 연령 확인을 다시 진행해 주세요.' },
+      { message: '가입 화면에서 연령 확인과 이용약관 동의를 다시 진행해 주세요.' },
     );
     assert.deepEqual((await engine.query('SELECT id FROM "user"')).rows, []);
-    for (const input of [null, {}, { ageOver14: false }, { ageOver14: 'true' }, { ageOver14: 1 }])
-      assert.equal(hasAgeDeclaration(input), false);
-    assert.equal(hasAgeDeclaration({ ageOver14: true }), true);
 
     // Exercise Better Auth's real state/callback/database path. Only the Google
     // token exchange and user-info responses are synthetic; no Google request occurs.
@@ -53,33 +50,65 @@ test('Google signup cannot create a user without a server-bound age declaration'
       },
       data: { sub: 'age-fixture-subject' },
     });
-    const start = await auth.handler(
-      new Request('http://localhost:3000/api/auth/sign-in/social', {
-        method: 'POST',
-        headers: { origin: 'http://localhost:3000', 'content-type': 'application/json' },
-        body: JSON.stringify({
-          provider: 'google',
-          callbackURL: 'http://localhost:3000',
-          additionalData: { ageOver14: true, role: 'OWNER' },
+    const origin = 'http://localhost:3000';
+    const start = async (fields: Record<string, unknown> = {}) => {
+      // Each scenario starts with its own rate-limit budget.
+      await engine.exec('DELETE FROM "rateLimit"');
+      return auth.handler(
+        new Request(`${origin}/api/auth/sign-in/social`, {
+          method: 'POST',
+          headers: { origin, 'content-type': 'application/json' },
+          body: JSON.stringify({
+            provider: 'google',
+            callbackURL: origin,
+            errorCallbackURL: `${origin}/sign-in`,
+            ...fields,
+          }),
         }),
-      }),
+      );
+    };
+    const finish = async (response: Response) => {
+      assert.equal(response.status, 200);
+      const state = new URL((await response.json()).url).searchParams.get('state');
+      assert.ok(state);
+      const cookies = response.headers
+        .getSetCookie()
+        .map((value) => value.split(';')[0])
+        .join('; ');
+      const callback = await auth.handler(
+        new Request(
+          `${origin}/api/auth/callback/google?code=fixture&state=${encodeURIComponent(state)}`,
+          { headers: { cookie: cookies } },
+        ),
+      );
+      assert.equal(callback.status, 302);
+      return callback;
+    };
+
+    for (const additionalData of [
+      undefined,
+      { ageOver14: true, termsAccepted: false },
+      { ageOver14: true, termsAccepted: 'true' },
+      { ageOver14: 'true', termsAccepted: true },
+      { ageOver14: true, serverContext: { membershipDeclaration: membershipDeclarationVersion } },
+    ]) {
+      assert.equal((await start({ requestSignUp: true, additionalData })).status, 400);
+    }
+    const declarations = { ageOver14: true, termsAccepted: true };
+    const firstLogin = await finish(await start({ additionalData: declarations }));
+    assert.equal(firstLogin.headers.get('location'), `${origin}/sign-in?error=signup_disabled`);
+    assert.deepEqual((await engine.query('SELECT id FROM "user"')).rows, []);
+    assert.deepEqual((await engine.query('SELECT id FROM "session"')).rows, []);
+
+    const signup = await finish(
+      await start({ requestSignUp: true, additionalData: { ...declarations, role: 'OWNER' } }),
     );
-    assert.equal(start.status, 200);
-    const redirect = new URL((await start.json()).url);
-    const state = redirect.searchParams.get('state');
-    assert.ok(state);
-    const cookies = start.headers
-      .getSetCookie()
-      .map((value) => value.split(';')[0])
-      .join('; ');
-    const callback = await auth.handler(
-      new Request(
-        `http://localhost:3000/api/auth/callback/google?code=fixture&state=${encodeURIComponent(state)}`,
-        { headers: { cookie: cookies } },
-      ),
-    );
-    assert.equal(callback.status, 302);
-    assert.equal(callback.headers.get('location'), 'http://localhost:3000');
+    assert.equal(signup.headers.get('location'), origin);
+    assert.equal((await engine.query('SELECT id FROM "session"')).rows.length, 1);
+
+    const returningLogin = await finish(await start());
+    assert.equal(returningLogin.headers.get('location'), origin);
+    assert.equal((await engine.query('SELECT id FROM "session"')).rows.length, 2);
     assert.deepEqual((await engine.query('SELECT email,role FROM "user"')).rows, [
       { email: 'age-ok@fixture.invalid', role: 'MEMBER' },
     ]);

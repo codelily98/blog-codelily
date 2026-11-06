@@ -1,8 +1,12 @@
-export const membershipDeclarationVersion = '2026-11-05';
+export const membershipDeclarationVersion = '2026-11-07';
 
-/** A self-declaration, not proof of age. Never use this input to grant a role. */
-export function hasAgeDeclaration(value: unknown): boolean {
+export function hasSignupDeclaration(value: unknown): boolean {
   return (
-    typeof value === 'object' && value !== null && 'ageOver14' in value && value.ageOver14 === true
+    typeof value === 'object' &&
+    value !== null &&
+    'ageOver14' in value &&
+    value.ageOver14 === true &&
+    'termsAccepted' in value &&
+    value.termsAccepted === true
   );
 }

@@ -53,9 +53,10 @@ export default function Home() {
       <section className="max-w-3xl space-y-4">
         <h2 className="text-xl font-semibold">Google 로그인과 회원 기능</h2>
         <p className="leading-8 text-muted">
-          만 14세 이상은 Google 계정으로 로그인해 댓글을 작성하고 자기 댓글을 삭제할 수 있습니다. 글
-          작성·수정에는 운영자가 부여한 편집 권한이 필요하며, Work 문서 관리는 운영자가 담당합니다.
-          Google의 기본 계정 정보는 로그인과 계정 식별에 사용합니다.
+          만 14세 이상은 Google 계정으로 가입할 수 있습니다. 가입한 회원은 로그인해 댓글을 작성하고
+          자기 댓글을 삭제할 수 있습니다. 글 작성·수정에는 운영자가 부여한 편집 권한이 필요하며,
+          Work 문서 관리는 운영자가 담당합니다. Google의 기본 계정 정보는 로그인과 계정 식별에
+          사용합니다.
         </p>
         <Link
           href="/sign-in"
