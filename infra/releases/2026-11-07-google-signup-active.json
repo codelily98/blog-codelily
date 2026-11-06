@@ -1,0 +1,97 @@
+{
+  "release": "google-signup-996df635541d",
+  "state": "production-active",
+  "platform": "linux/amd64",
+  "delivery": "docker-save-scp-load",
+  "sourceCommit": "9008fdddf1527f3262c33a59e81b0adc4b19e6a0",
+  "sourceArchiveSha256": "996df635541dc010ab10660ea086f153cb10206eb1805f183197f8ecdc66b782",
+  "sourceFiles": 184,
+  "nodeImage": "node@sha256:c86ecead9e55a5210ac1727de38a4ca840bf03dcaf34dc9749addbf383b1920c",
+  "images": {
+    "blog": "sha256:37744528264d7ce6db6c5e5066767cde47bd74de0e77121b95b2dea72e3b312b",
+    "migrator": "sha256:2cadd85e8cd3dfcf06d58dab53baf357add5ea3a020ee41a97ad9c03777439d1"
+  },
+  "previousImages": {
+    "blog": "sha256:1ce22ad2504be110e2c20ed2a51c77fb5b63fca982afc508ada0d332382439d1",
+    "migrator": "sha256:1eb678c12c63bd5252d8b4bb320071449df62072c129cff29175e963f181d86a"
+  },
+  "migrationChanges": false,
+  "migrationAppliedThrough": "006_work.sql",
+  "migrationVersions": [
+    "001_initial.sql",
+    "002_rate_limit_retention.sql",
+    "003_member_withdrawal.sql",
+    "004_withdrawn_post_visibility.sql",
+    "005_withdrawal_upload_settlement.sql",
+    "006_work.sql"
+  ],
+  "unchangedConfiguration": {
+    "infra/compose.production.yml": "56d6cbf0f1162baaef125f51f171d81fb2dd0c1063d22aa034c185aba9f316d7",
+    "infra/postgres/post-migration.sql": "2e46a047607db5794c079e290e08dd2f936a4f2e32936b4b08378ac9c18c8e05",
+    "apps/code-lily/migrations/001_initial.sql": "dbf0e2a50b5771fea8dc3477126d3ed2cbf2327f8315a1b32bc8bc34e27da2df",
+    "apps/code-lily/migrations/002_rate_limit_retention.sql": "dd5e9ea3ca6cf22a4cd139dcaf2e8c3c16eb8a63887fe24d350032f3ce8456ad",
+    "apps/code-lily/migrations/003_member_withdrawal.sql": "7940e017015ddcbe3c6afeb68a1e8c26edbc84f5635e784909a44efd3340f4e5",
+    "apps/code-lily/migrations/004_withdrawn_post_visibility.sql": "e2e8dab70866e9ec02f508b8775388360091d9187c08023903d8731065865216",
+    "apps/code-lily/migrations/005_withdrawal_upload_settlement.sql": "ae134c35ee60995ead479788d4b89694a72e47c813a34f5a8a00fee490e9f367",
+    "apps/code-lily/migrations/006_work.sql": "5b747f9ed7bb027ae5e35a0c05423d9c09386139a29f700ce746381af04acd3f"
+  },
+  "policyStatus": "public-review-draft",
+  "preDeploymentEncryptedSnapshot": "20261106T192232Z",
+  "rollbackReference": "2026-11-07-work-editor-active.json",
+  "archiveBytes": 453312000,
+  "sha256": {
+    "codelily-google-signup-linux-amd64.tar": "a8d5cfcfa9236fb681f786a2c703022df53467cf49fc16fbdabe47be20b0c0a1",
+    "build-source.tar": "996df635541dc010ab10660ea086f153cb10206eb1805f183197f8ecdc66b782",
+    "apply-google-signup-release.py": "90080139d5d838c7a9e90eee79131a5265fccdf859b06d9b8fb98007c2aed68c"
+  },
+  "validation": {
+    "linuxBuild": true,
+    "typecheck": true,
+    "boundaries": true,
+    "unitAndSqlTests": 24,
+    "postgresVersion": "16.15",
+    "postgresRuntimeE2E": true,
+    "chromeE2E": 10,
+    "automatedAuthAccessibilityViolations": 0,
+    "viewports": [
+      "1440x1100",
+      "390x844"
+    ],
+    "googleCallbackFixture": true
+  },
+  "activatedAt": "2026-11-07T04:24:17+09:00",
+  "externalSnapshotVerified": true,
+  "postDeploymentEncryptedSnapshot": "20261106T192449Z",
+  "preDeploymentEncryptedSnapshotVerifiedOffHost": true,
+  "postDeploymentEncryptedSnapshotVerifiedOffHost": true,
+  "productionVerification": {
+    "checkedAt": "2026-11-06T19:24:52.446Z",
+    "pages": {
+      "/": 200,
+      "/health/ready": 200,
+      "/posts": 200,
+      "/about": 200,
+      "/privacy": 200,
+      "/terms": 200,
+      "/sign-in": 200,
+      "/sign-in?mode=signup": 200,
+      "/sign-in?error=signup_disabled": 200
+    },
+    "authStarts": {
+      "signupMissingTerms": 400,
+      "loginWithoutDeclarations": 200,
+      "signupWithDeclarations": 200
+    },
+    "anonymousWorkStatus": 401,
+    "internalPublicStatus": 404,
+    "neighborStatus": 200,
+    "authPrivateNoStore": true,
+    "googleAuthorizationRedirectVerified": true,
+    "actualGoogleAccountRoundTrip": "not-checked-in-production",
+    "appHealth": "healthy",
+    "appRestartCount": 0,
+    "backupTimer": "active",
+    "maintenanceTimer": "active",
+    "schemaAndPrivilegeChecks": "passed"
+  }
+}

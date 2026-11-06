@@ -5,6 +5,7 @@
 - `/sign-in`의 Google 로그인은 기존 회원 세션만 생성한다. 기존 회원은 브라우저나 기기를 바꿔도 동의 화면 없이 로그인할 수 있다. 미가입 Google 계정이 이 경로를 사용하면 `signup_disabled`로 가입 안내를 표시한다.
 - 신규 회원은 `/sign-in?mode=signup`에서 만 14세 이상임을 직접 확인하고 이용약관에 동의한 뒤 Google로 가입한다. 서버는 명시적 가입 요청의 두 boolean 값이 모두 참인지 확인하고 검증 버전을 OAuth 서버 상태에 연결한다. 회원 생성은 이 상태가 있을 때만 허용한다. 기존 계정과 역할은 그대로 사용한다. [Better Auth의 명시적 가입 옵션](https://better-auth.com/docs/concepts/oauth#disableimplicitsignup)
 - 가입 절차는 서버의 계정 생성 여부를 기준으로 하며 DB 스키마는 동일하다. 두 확인값은 OAuth 상태의 수명을 따른다. 기존 OAuth 흐름에서 시작한 신규 회원은 가입 화면에서 다시 진행할 수 있다.
+- 운영 앱은 04:24:17 KST에 전환했다. 공개 HTTPS에서 동의 없이 기존 로그인 시작, 두 확인값으로 신규 가입 시작, 약관 동의가 빠진 가입의 400 응답을 확인했다. 실제 Google 계정으로 가입·로그인을 마치는 검증과 Google 일반 게시는 후속이다. [활성 릴리스 명세](../../infra/releases/2026-11-07-google-signup-active.json)
 
 ## 2026-11-05 업체 조건 확인·공식 문의 발송
 
