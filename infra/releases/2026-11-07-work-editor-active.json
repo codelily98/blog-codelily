@@ -1,0 +1,101 @@
+{
+  "release": "work-editor-374a1b629d2f",
+  "state": "production-active",
+  "platform": "linux/amd64",
+  "delivery": "docker-save-scp-load",
+  "sourceCommit": "0c0a23f37b5f8f35ace064c2fea96adf7650c122",
+  "sourceArchiveSha256": "374a1b629d2f6bb1786367c8a7592100ea078f3f4be4c98b9d93e1614f6bf66c",
+  "sourceFiles": 184,
+  "nodeImage": "node@sha256:c86ecead9e55a5210ac1727de38a4ca840bf03dcaf34dc9749addbf383b1920c",
+  "images": {
+    "blog": "sha256:1ce22ad2504be110e2c20ed2a51c77fb5b63fca982afc508ada0d332382439d1",
+    "migrator": "sha256:1eb678c12c63bd5252d8b4bb320071449df62072c129cff29175e963f181d86a"
+  },
+  "previousImages": {
+    "blog": "sha256:9e61ce7d8563b6511d0177ded7b70cc3ccc3e031ae56777d643b2ca0d1348362",
+    "migrator": "sha256:20e602437ceb9bbae0fafee71ec4fc4b690dc36bf076c95d1d6bd2dbc94ea1c1"
+  },
+  "migrationChanges": false,
+  "migrationAppliedThrough": "006_work.sql",
+  "migrationVersions": [
+    "001_initial.sql",
+    "002_rate_limit_retention.sql",
+    "003_member_withdrawal.sql",
+    "004_withdrawn_post_visibility.sql",
+    "005_withdrawal_upload_settlement.sql",
+    "006_work.sql"
+  ],
+  "unchangedConfiguration": {
+    "infra/compose.production.yml": "56d6cbf0f1162baaef125f51f171d81fb2dd0c1063d22aa034c185aba9f316d7",
+    "infra/postgres/post-migration.sql": "2e46a047607db5794c079e290e08dd2f936a4f2e32936b4b08378ac9c18c8e05",
+    "apps/code-lily/migrations/001_initial.sql": "dbf0e2a50b5771fea8dc3477126d3ed2cbf2327f8315a1b32bc8bc34e27da2df",
+    "apps/code-lily/migrations/002_rate_limit_retention.sql": "dd5e9ea3ca6cf22a4cd139dcaf2e8c3c16eb8a63887fe24d350032f3ce8456ad",
+    "apps/code-lily/migrations/003_member_withdrawal.sql": "7940e017015ddcbe3c6afeb68a1e8c26edbc84f5635e784909a44efd3340f4e5",
+    "apps/code-lily/migrations/004_withdrawn_post_visibility.sql": "e2e8dab70866e9ec02f508b8775388360091d9187c08023903d8731065865216",
+    "apps/code-lily/migrations/005_withdrawal_upload_settlement.sql": "ae134c35ee60995ead479788d4b89694a72e47c813a34f5a8a00fee490e9f367",
+    "apps/code-lily/migrations/006_work.sql": "5b747f9ed7bb027ae5e35a0c05423d9c09386139a29f700ce746381af04acd3f"
+  },
+  "policyStatus": "public-review-draft",
+  "preDeploymentEncryptedSnapshot": "20261106T185910Z",
+  "rollbackReference": "2026-11-05-public-home-active.json",
+  "archiveBytes": 453291520,
+  "sha256": {
+    "codelily-work-editor-linux-amd64.tar": "4632e4bbcb2c1ea38859a02179cb0e143e9279eb6d738a7aebbc06b29e3a2e50",
+    "build-source.tar": "374a1b629d2f6bb1786367c8a7592100ea078f3f4be4c98b9d93e1614f6bf66c",
+    "apply-work-editor-release.py": "29d4bff5a83295f0d7ece56df829eea97725a3874a5a16558a4d3adbfe9401f1"
+  },
+  "validation": {
+    "linuxBuild": true,
+    "typecheck": true,
+    "boundaries": true,
+    "unitAndSqlTests": 24,
+    "postgresVersion": "16.15",
+    "postgresRuntimeE2E": true,
+    "chromeE2E": 10,
+    "automatedEditorAccessibilityViolations": 0,
+    "viewports": [
+      "1440x1100",
+      "390x844"
+    ]
+  },
+  "activatedAt": "2026-11-07T04:02:46+09:00",
+  "externalSnapshotVerified": true,
+  "postDeploymentEncryptedSnapshot": "20261106T190322Z",
+  "preDeploymentEncryptedSnapshotVerifiedOffHost": true,
+  "postDeploymentEncryptedSnapshotVerifiedOffHost": true,
+  "productionVerification": {
+    "checkedAt": "2026-11-06T19:03:23.526Z",
+    "pages": {
+      "/": 200,
+      "/health/ready": 200,
+      "/posts": 200,
+      "/about": 200,
+      "/privacy": 200,
+      "/terms": 200,
+      "/sign-in": 200
+    },
+    "anonymousApis": {
+      "/api/work/tree": 401,
+      "/api/work/search?q=release-verification": 401,
+      "/api/work/trash": 401
+    },
+    "anonymousWorkSignIn": true,
+    "crossOriginWriteStatus": 403,
+    "internalPublicStatus": 404,
+    "neighborStatus": 200,
+    "workEditorCss": {
+      "path": "/_next/static/css/b77333b5af1e534f.css",
+      "sha256": "903ed95fc841d8134001fabe0c30c83f7899e155c72d7f703f81894d041863dc",
+      "cdn": "HIT",
+      "immutable": true,
+      "matchesReleaseImage": true
+    },
+    "privateNoStore": true,
+    "appHealth": "healthy",
+    "appRestartCount": 0,
+    "backupTimer": "active",
+    "maintenanceTimer": "active",
+    "schemaAndPrivilegeChecks": "passed",
+    "authenticatedOwnerEditor": "not-checked-in-production"
+  }
+}
