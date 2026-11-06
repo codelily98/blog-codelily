@@ -246,11 +246,6 @@ export function WorkDocumentEditor({
         )}
       </div>
       {manage ? (
-        <p className="text-xs text-muted">
-          입력을 멈춘 뒤 1.5초 후 자동 저장됩니다. 최대 100,000자입니다.
-        </p>
-      ) : null}
-      {manage ? (
         <div
           hidden={mode !== 'editor'}
           onCompositionStartCapture={() => {
@@ -262,6 +257,18 @@ export function WorkDocumentEditor({
             setComposing(false);
           }}
         >
+          <details className="mb-3 rounded-lg border border-line bg-raised">
+            <summary className="min-h-11 cursor-pointer px-3 py-3 text-sm font-medium">
+              편집 안내
+            </summary>
+            <div className="space-y-1 px-3 pb-3 text-sm leading-6 text-muted">
+              <p>입력을 멈춘 뒤 1.5초 후 자동 저장됩니다. 최대 100,000자입니다.</p>
+              <p>
+                Markdown 원문을 편집합니다. 표·코드 블록·체크 목록을 지원합니다. Ctrl+S로 즉시
+                저장할 수 있습니다.
+              </p>
+            </div>
+          </details>
           <ContentEditor
             value={content}
             onChange={change}

@@ -71,6 +71,7 @@ export function ContentEditor({
           value: initial,
           iframe: false,
           height: 400,
+          statusbar: !markdownOnly,
           lang: language.default as never,
           plugins: [
             plugins.fontColor,
@@ -102,6 +103,7 @@ export function ContentEditor({
               }
               if (markdownOnly) {
                 // Keep the vendor source surface while preventing HTML round trips.
+                $.frameContext.get('markdown').wrap = 'soft';
                 host.current
                   ?.querySelector<HTMLElement>('.se-toolbar')
                   ?.style.setProperty('display', 'none', 'important');
@@ -176,12 +178,18 @@ export function ContentEditor({
     else if (format === 'HTML') editor.current.$.html.set(value);
   }, [value, format]);
   return (
-    <div className="editor-shell" ref={host} aria-describedby={`${id}-help`}>
-      <p id={`${id}-help`} className="mb-3 text-xs leading-5 text-muted">
-        {markdownOnly
-          ? 'Markdown 원문을 편집합니다. 표·코드 블록·체크 목록을 지원합니다. Ctrl+S로 즉시 저장할 수 있습니다.'
-          : 'HTML 서식·소스와 Markdown 보기를 지원합니다. 표와 코드 블록을 사용할 수 있습니다. 이미지는 아래 R2 업로드를 이용해주세요.'}
-      </p>
+    <div
+      className="editor-shell"
+      ref={host}
+      data-markdown-only={markdownOnly || undefined}
+      aria-describedby={markdownOnly ? undefined : `${id}-help`}
+    >
+      {markdownOnly ? null : (
+        <p id={`${id}-help`} className="mb-3 text-xs leading-5 text-muted">
+          HTML 서식·소스와 Markdown 보기를 지원합니다. 표와 코드 블록을 사용할 수 있습니다. 이미지는
+          아래 R2 업로드를 이용해주세요.
+        </p>
+      )}
       {!ready && !error ? (
         <p role="status" className="py-3 text-sm text-muted">
           편집기 불러오는 중…

@@ -55,9 +55,15 @@ test('Work OWNER workflow, member visibility, autosave recovery, conflict and ac
     .getByRole('textbox', { name: 'Work 본문 원본', exact: true })
     .filter({ visible: true });
   const source =
-    '---\nstatus: 진행중\n---\n\n# Work 원문 검증\n\n- [x] 완료\n- [ ] 예정\n\n[[내부 링크]]\n\n| 항목 | 상태 |\n|---|---|\n| 업무 | 완료 |\n\n```ts\nconst value = 1;\n```\n\n<script>alert(1)</script>';
+    '---\nstatus: 진행중\n---\n\n# Work 원문 검증\n\n- [x] 완료\n- [ ] 예정\n\n[[내부 링크]]\n\n| 항목 | 상태 |\n|---|---|\n| 업무 | 완료 |\n\n```ts\nconst value = 1;\n```\n\n<script>alert(1)</script>\n\n' +
+    '0123456789'.repeat(75);
   await expect(markdown).toBeVisible();
   await expect(page.getByRole('button', { name: 'HTML 편집', exact: true })).toHaveCount(0);
+  await expect(page.locator('.editor-shell .se-markdown-view-line')).toBeHidden();
+  await expect(page.locator('.editor-shell .se-status-bar')).toHaveCount(0);
+  await expect(markdown).toHaveCSS('resize', 'none');
+  await expect(markdown).toHaveCSS('background-color', 'rgb(41, 38, 34)');
+  await expect(markdown).toHaveCSS('color', 'rgb(238, 236, 229)');
   await markdown.fill(source);
   await expect(page.getByRole('status').filter({ hasText: '저장됨' })).toBeVisible();
   await expect
@@ -65,6 +71,40 @@ test('Work OWNER workflow, member visibility, autosave recovery, conflict and ac
     .toBe(source);
   await page.reload();
   await expect(markdown).toHaveValue(source);
+  const guide = page.locator('summary').filter({ hasText: '편집 안내' });
+  const autosaveHelp = page.getByText(
+    '입력을 멈춘 뒤 1.5초 후 자동 저장됩니다. 최대 100,000자입니다.',
+  );
+  const markdownHelp = page.getByText(
+    'Markdown 원문을 편집합니다. 표·코드 블록·체크 목록을 지원합니다. Ctrl+S로 즉시 저장할 수 있습니다.',
+  );
+  await expect(autosaveHelp).toBeHidden();
+  await expect(markdownHelp).toBeHidden();
+  await guide.press('Enter');
+  await expect(guide).toBeFocused();
+  await expect(autosaveHelp).toBeVisible();
+  await expect(markdownHelp).toBeVisible();
+  await page
+    .getByRole('button', { name: '라이트 테마로 변경', exact: true })
+    .filter({ visible: true })
+    .click();
+  await expect(markdown).toHaveCSS('background-color', 'rgb(255, 255, 255)');
+  await expect(markdown).toHaveCSS('color', 'rgb(36, 34, 31)');
+  await expect(markdown).toHaveValue(source);
+  const lightEditorAudit = await new AxeBuilder({ page })
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa'])
+    .analyze();
+  expect(lightEditorAudit.violations).toEqual([]);
+  const evidence = process.env.CODELILY_EVIDENCE_DIR;
+  if (evidence)
+    await page.screenshot({ path: path.join(evidence, 'work-editor-desktop-light.png') });
+  await guide.press('Space');
+  await expect(autosaveHelp).toBeHidden();
+  await page
+    .getByRole('button', { name: '다크 테마로 변경', exact: true })
+    .filter({ visible: true })
+    .click();
+  await expect(markdown).toHaveCSS('background-color', 'rgb(41, 38, 34)');
   await page.getByRole('button', { name: '미리보기', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Work 원문 검증', exact: true })).toBeVisible();
   await expect(page.locator('.content-body input[checked]')).toHaveCount(1);
@@ -74,7 +114,6 @@ test('Work OWNER workflow, member visibility, autosave recovery, conflict and ac
     .analyze();
   expect(audit.violations).toEqual([]);
   expect(consoleMessages).toEqual([]);
-  const evidence = process.env.CODELILY_EVIDENCE_DIR;
   if (evidence)
     await page.screenshot({ path: path.join(evidence, 'work-desktop.png'), fullPage: true });
 
@@ -174,6 +213,22 @@ test('Work OWNER workflow, member visibility, autosave recovery, conflict and ac
   expect(
     await page.evaluate(() => window.document.documentElement.scrollWidth <= window.innerWidth),
   ).toBe(true);
+  await expect(markdown).toHaveCSS('white-space', 'pre-wrap');
+  await expect(markdown).toHaveCSS('overflow-x', 'hidden');
+  expect(await markdown.evaluate((area) => area.scrollWidth <= area.clientWidth)).toBe(true);
+  const mobileEditorAudit = await new AxeBuilder({ page })
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa'])
+    .analyze();
+  expect(mobileEditorAudit.violations).toEqual([]);
+  if (evidence) {
+    await markdown.evaluate((area) => {
+      area.scrollTop = area.scrollHeight;
+    });
+    await page.screenshot({
+      path: path.join(evidence, 'work-editor-mobile-dark.png'),
+      fullPage: true,
+    });
+  }
   await page.getByRole('button', { name: '미리보기', exact: true }).click();
   if (evidence)
     await page.screenshot({ path: path.join(evidence, 'work-mobile.png'), fullPage: true });
