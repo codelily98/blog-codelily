@@ -14,7 +14,7 @@ Next.js 풀스택 서비스와 공통 React 모듈을 함께 관리하는 worksp
 
 ## 개발 실행
 
-Node 24 LTS를 사용합니다. 최초 설치 후 `.env.example`을 참고해 `apps/code-lily/.env.local`을 작성합니다. 공개 화면을 확인하는 데 Google/R2 키는 필요하지 않습니다. 설정 전 로그인·업로드는 설정 필요 상태를 반환합니다.
+Node 24 LTS의 24.22.3 이상을 사용합니다. 최초 설치 후 `.env.example`을 참고해 `apps/code-lily/.env.local`을 작성합니다. 공개 화면을 확인하는 데 Google/R2 키는 필요하지 않습니다. 설정 전 로그인·업로드는 설정 필요 상태를 반환합니다.
 
 ```sh
 npm ci
@@ -28,6 +28,8 @@ npm run dev
 Docker 앱 미리보기는 `npm run local:up`으로 시작합니다. host 개발 서버와 동시에 실행하지 않습니다. 컨테이너 중지는 `npm run local:down`, 실제 PostgreSQL·Redis 권한 검사는 `npm run verify:local`입니다. 로컬은 [compose.yaml](compose.yaml), 운영은 [infra/compose.production.yml](infra/compose.production.yml)로 관리합니다.
 
 접속: `http://localhost:3000`. `DATABASE_URL`이 없으면 개발용 PGlite를 `.local/code-lily-db`에 사용합니다. seed는 이 저장소에서 작성한 예시 콘텐츠이며 실제 이력·프로필이 아닙니다. 운영 콘텐츠로 교체하고 공개 연락처를 검토한 뒤 배포합니다. seed는 비밀번호·Google 계정·운영 로그인 우회를 생성하지 않습니다.
+
+공개 아카이브 `/posts`의 검색·카테고리·태그는 URL로 공유할 수 있습니다. `/feed.xml`은 최근 공개 글의 제목과 요약을 제공하는 RSS입니다.
 
 ## Google 전용 로그인
 
@@ -45,7 +47,7 @@ Google Cloud에서 OAuth Web application client를 만들고 다음 redirect URI
 | EDITOR | 자기 카테고리·글 작성/수정/삭제, 댓글 |
 | OWNER | 모든 글·카테고리, About 항목, 회원 권한, 통계·감사 조회 |
 
-가입·이메일/비밀번호 로그인 화면은 없습니다. 역할·소유권은 서버에서 검증합니다. 최초 OWNER 정책은 가입 시 적용되므로 기존 계정의 권한 변경은 별도 운영 절차로 수행해야 합니다.
+가입과 로그인에는 Google 계정을 사용합니다. 역할·소유권은 서버에서 검증합니다. 최초 OWNER 정책은 가입 시 적용되므로 기존 계정의 권한 변경은 별도 운영 절차로 수행해야 합니다.
 
 ## 구성
 

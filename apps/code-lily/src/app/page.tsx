@@ -1,92 +1,81 @@
 import type { Metadata } from 'next';
+import Image from 'next/image';
 import Link from 'next/link';
-import { operatorName, privacyEmail } from '@/presentation/policy-contact';
+import { ChevronRight } from 'lucide-react';
+import { services } from '@/composition';
+import { PostCard } from '@/modules/posts/presentation/post-card';
+import { feedPath, publicationDescription } from '@/presentation/publication';
+import lilyCover from './lily-cover.webp';
+
+export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: { absolute: 'code-lily · 기술 글과 업무 기록' },
-  description:
-    '기술 글과 소개를 읽고, Google 로그인 후 댓글과 공개 Work 문서를 이용하는 공간입니다.',
+  title: { absolute: 'code-lily · 기술 블로그' },
+  description: publicationDescription,
 };
 
-export default function Home() {
+export default async function Home() {
+  const { posts } = await services();
+  const latest = await posts.list({ limit: 4 });
+
   return (
-    <main id="main-content" className="about-shell space-y-12 py-12 sm:py-20">
-      <header className="max-w-3xl space-y-5">
-        <p className="text-sm font-semibold tracking-widest text-muted">code-lily</p>
-        <h1 className="text-3xl leading-tight font-bold sm:text-4xl">
-          기술을 배우고, 기록하고, 나누는 공간
-        </h1>
-        <p className="text-base leading-8 text-muted">
-          개발하며 배운 내용을 기술 글로 기록하고, 소개와 업무 문서를 함께 정리합니다. 공개 글과
-          About은 로그인 없이 읽을 수 있습니다.
-        </p>
+    <main id="main-content" className="publication-shell">
+      <header className="publication-hero">
+        <div>
+          <h1 className="publication-display">배운 것을 기록합니다.</h1>
+          <p className="mt-6 max-w-xl text-[1rem] leading-relaxed text-muted sm:text-xl">
+            {publicationDescription}
+          </p>
+          <div className="mt-5 flex flex-wrap items-center gap-x-8 gap-y-2 sm:mt-7">
+            <Link href="/posts" className="publication-link">
+              전체 글 보기 <ChevronRight size={17} aria-hidden="true" />
+            </Link>
+            <a href={feedPath} className="publication-link">
+              RSS 구독 <ChevronRight size={17} aria-hidden="true" />
+            </a>
+          </div>
+        </div>
+        <div className="publication-cover">
+          <Image src={lilyCover} alt="" unoptimized preload className="publication-cover-photo" />
+        </div>
       </header>
-      <nav aria-label="서비스 바로가기" className="grid gap-4 sm:grid-cols-3">
-        <Link
-          href="/posts"
-          className="rounded-xl border border-line p-6 transition-colors hover:bg-surface"
-        >
-          <h2 className="mb-3 text-xl font-semibold">Posts 글 보기</h2>
-          <p className="text-sm leading-7 text-muted">
-            기술 글을 카테고리와 태그로 탐색하고 검색합니다.
-          </p>
-        </Link>
-        <Link
-          href="/about"
-          className="rounded-xl border border-line p-6 transition-colors hover:bg-surface"
-        >
-          <h2 className="mb-3 text-xl font-semibold">About 소개 보기</h2>
-          <p className="text-sm leading-7 text-muted">
-            운영자의 소개, 경력과 관심사를 읽을 수 있습니다.
-          </p>
-        </Link>
-        <Link
-          href="/work"
-          className="rounded-xl border border-line p-6 transition-colors hover:bg-surface"
-        >
-          <h2 className="mb-3 text-xl font-semibold">Work 문서 보기</h2>
-          <p className="text-sm leading-7 text-muted">
-            로그인 후 운영자가 공개한 업무 문서를 조회·검색·열람합니다.
-          </p>
-        </Link>
-      </nav>
-      <section className="max-w-3xl space-y-4">
-        <h2 className="text-xl font-semibold">Google 로그인과 회원 기능</h2>
-        <p className="leading-8 text-muted">
-          만 14세 이상은 Google 계정으로 가입할 수 있습니다. 가입한 회원은 로그인해 댓글을 작성하고
-          자기 댓글을 삭제할 수 있습니다. 글 작성·수정에는 운영자가 부여한 편집 권한이 필요하며,
-          Work 문서 관리는 운영자가 담당합니다. Google의 기본 계정 정보는 로그인과 계정 식별에
-          사용합니다.
-        </p>
-        <Link
-          href="/sign-in"
-          className="inline-flex min-h-11 items-center font-semibold underline underline-offset-4"
-        >
-          Google 로그인 안내
-        </Link>
-      </section>
-      <section className="max-w-3xl space-y-4">
-        <h2 className="text-xl font-semibold">이용 안내와 문의</h2>
-        <div className="flex flex-wrap gap-x-6">
-          <Link
-            href="/privacy"
-            className="inline-flex min-h-11 items-center underline underline-offset-4"
-          >
-            개인정보처리방침
-          </Link>
-          <Link
-            href="/terms"
-            className="inline-flex min-h-11 items-center underline underline-offset-4"
-          >
-            이용약관
+
+      <section aria-labelledby="latest-heading" className="border-t border-line">
+        <div className="flex flex-wrap items-center justify-between gap-3 py-5 sm:py-6">
+          <h2 id="latest-heading" className="publication-section-title">
+            최근 글
+          </h2>
+          <Link href="/posts" className="publication-link">
+            전체 글 <ChevronRight size={17} aria-hidden="true" />
           </Link>
         </div>
-        <p className="text-sm leading-7 text-muted">
-          운영자 {operatorName} ·{' '}
-          <a href={`mailto:${privacyEmail}`} className="break-all underline underline-offset-4">
-            {privacyEmail}
-          </a>
+        {latest.length > 0 ? (
+          <div className="divide-y divide-line border-y border-line">
+            {latest.map((post) => (
+              <PostCard key={post.id} post={post} heading="h3" />
+            ))}
+          </div>
+        ) : (
+          <p className="border-y border-line py-7 text-sm text-muted">아직 공개된 글이 없습니다.</p>
+        )}
+      </section>
+
+      <section aria-labelledby="member-heading" className="mt-12 max-w-2xl sm:mt-16">
+        <h2 id="member-heading" className="text-lg font-semibold">
+          댓글과 Work 문서
+        </h2>
+        <p className="mt-3 text-sm leading-7 text-muted">
+          만 14세 이상은 Google 계정으로 가입할 수 있습니다. 로그인하면 댓글을 작성하고 공개된 Work
+          문서를 읽을 수 있습니다. Google의 기본 계정 정보는 로그인과 계정 식별에 사용합니다.
         </p>
+        <div className="mt-2 flex flex-wrap gap-x-6 text-sm">
+          <Link href="/sign-in" className="publication-link">
+            Google 로그인 안내
+          </Link>
+          <Link href="/work" className="publication-link">
+            Work 문서 보기
+          </Link>
+        </div>
       </section>
     </main>
   );

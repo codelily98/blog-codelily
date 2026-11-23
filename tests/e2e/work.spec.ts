@@ -62,8 +62,8 @@ test('Work OWNER workflow, member visibility, autosave recovery, conflict and ac
   await expect(page.locator('.editor-shell .se-markdown-view-line')).toBeHidden();
   await expect(page.locator('.editor-shell .se-status-bar')).toHaveCount(0);
   await expect(markdown).toHaveCSS('resize', 'none');
-  await expect(markdown).toHaveCSS('background-color', 'rgb(41, 38, 34)');
-  await expect(markdown).toHaveCSS('color', 'rgb(238, 236, 229)');
+  await expect(markdown).toHaveCSS('background-color', 'rgb(35, 48, 39)');
+  await expect(markdown).toHaveCSS('color', 'rgb(244, 243, 233)');
   await markdown.fill(source);
   await expect(page.getByRole('status').filter({ hasText: '저장됨' })).toBeVisible();
   await expect
@@ -88,8 +88,8 @@ test('Work OWNER workflow, member visibility, autosave recovery, conflict and ac
     .getByRole('button', { name: '라이트 테마로 변경', exact: true })
     .filter({ visible: true })
     .click();
-  await expect(markdown).toHaveCSS('background-color', 'rgb(255, 255, 255)');
-  await expect(markdown).toHaveCSS('color', 'rgb(36, 34, 31)');
+  await expect(markdown).toHaveCSS('background-color', 'rgb(252, 253, 248)');
+  await expect(markdown).toHaveCSS('color', 'rgb(25, 36, 27)');
   await expect(markdown).toHaveValue(source);
   const lightEditorAudit = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa'])
@@ -104,7 +104,7 @@ test('Work OWNER workflow, member visibility, autosave recovery, conflict and ac
     .getByRole('button', { name: '다크 테마로 변경', exact: true })
     .filter({ visible: true })
     .click();
-  await expect(markdown).toHaveCSS('background-color', 'rgb(41, 38, 34)');
+  await expect(markdown).toHaveCSS('background-color', 'rgb(35, 48, 39)');
   await page.getByRole('button', { name: '미리보기', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Work 원문 검증', exact: true })).toBeVisible();
   await expect(page.locator('.content-body input[checked]')).toHaveCount(1);
@@ -242,7 +242,7 @@ test('Work OWNER workflow, member visibility, autosave recovery, conflict and ac
     .click();
   await expect(page.getByRole('button', { name: '휴지통', exact: true })).toHaveCSS(
     'color',
-    'rgb(103, 99, 93)',
+    'rgb(75, 91, 76)',
   );
   const lightAudit = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa'])

@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import path from 'node:path';
 
-test('public homepage explains the service and links the same policy and login pages', async ({
+test('public homepage renders recent articles, RSS, Pretendard and policy links', async ({
   page,
 }) => {
   const errors: string[] = [];
@@ -12,27 +12,52 @@ test('public homepage explains the service and links the same policy and login p
   });
   for (const viewport of [
     { width: 1440, height: 1100 },
+    { width: 1487, height: 1058 },
     { width: 390, height: 844 },
   ]) {
     await page.setViewportSize(viewport);
     const response = await page.goto('/');
     expect(response?.status()).toBe(200);
     await expect(page).toHaveURL('http://localhost:3000/');
-    await expect(page.getByRole('heading', { level: 1 })).toHaveText(
-      '기술을 배우고, 기록하고, 나누는 공간',
-    );
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('배운 것을 기록합니다.');
     const main = page.getByRole('main');
+    await expect(main.getByRole('heading', { name: '최근 글' })).toBeVisible();
+    await expect(main.getByRole('article')).toHaveCount(4);
+    await expect(main.locator('article p').first()).toHaveCSS('color', 'rgb(187, 199, 188)');
+    await expect(
+      page.getByRole('navigation', { name: '주 메뉴' }).getByRole('link', { name: 'Posts' }),
+    ).toHaveCSS('color', 'rgb(244, 243, 233)');
+    await expect(main.getByRole('heading', { level: 1 })).toHaveCSS('font-family', /Pretendard/);
+    await expect
+      .poll(() =>
+        page.evaluate(async () => {
+          await document.fonts.ready;
+          return [...document.fonts].some(
+            (font) => font.family.includes('Pretendard') && font.status === 'loaded',
+          );
+        }),
+      )
+      .toBe(true);
+    await expect
+      .poll(() =>
+        page
+          .locator('.publication-cover-photo')
+          .evaluate((image: HTMLImageElement) => image.naturalWidth),
+      )
+      .toBeGreaterThan(0);
     for (const [name, href] of [
-      ['Posts 글 보기', '/posts'],
-      ['About 소개 보기', '/about'],
+      ['전체 글 보기', '/posts'],
+      ['RSS 구독', '/feed.xml'],
       ['Work 문서 보기', '/work'],
-      ['개인정보처리방침', '/privacy'],
-      ['이용약관', '/terms'],
       ['Google 로그인 안내', '/sign-in'],
     ])
-      await expect(
-        main.getByRole('link', { name, exact: name === '개인정보처리방침' || name === '이용약관' }),
-      ).toHaveAttribute('href', href);
+      await expect(main.getByRole('link', { name, exact: true })).toHaveAttribute('href', href);
+    const footer = page.getByRole('contentinfo');
+    await expect(footer.getByRole('link', { name: '개인정보처리방침' })).toHaveAttribute(
+      'href',
+      '/privacy',
+    );
+    await expect(footer.getByRole('link', { name: '이용약관' })).toHaveAttribute('href', '/terms');
     const audit = await new AxeBuilder({ page })
       .withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa'])
       .analyze();
@@ -186,6 +211,14 @@ test('Posts → category → detail → About; light/dark, mobile and accessibil
   ).toBeVisible();
   await expect(page.locator('.content-body pre')).toBeVisible();
   await expect(page.getByText('Google 계정으로 로그인하면 댓글을 남길 수 있습니다.')).toBeVisible();
+  if (evidence)
+    await page.screenshot({
+      path: path.join(evidence, 'code-lily-reader-dark.png'),
+      fullPage: true,
+    });
+  await page.getByRole('link', { name: '#nextjs', exact: true }).click();
+  await expect(page.getByRole('heading', { name: '#nextjs', exact: true })).toBeVisible();
+  await expect(page.getByRole('article')).toHaveCount(1);
   await page
     .getByRole('navigation', { name: '주 메뉴' })
     .getByRole('link', { name: 'About', exact: true })
@@ -233,13 +266,57 @@ test('Posts → category → detail → About; light/dark, mobile and accessibil
   await expect(page.getByRole('button', { name: '글 검색', exact: true })).toBeFocused();
   await page.getByRole('button', { name: '글 검색', exact: true }).click();
   await page.getByRole('textbox', { name: '검색어', exact: true }).fill('PostgreSQL');
-  await page.getByRole('button', { name: '검색', exact: true }).click();
+  await page.getByRole('dialog').getByRole('button', { name: '검색', exact: true }).click();
   await expect(page.getByRole('heading', { name: '“PostgreSQL” 검색 결과' })).toBeVisible();
   await expect(page.getByRole('article')).toHaveCount(1);
   await page.getByRole('button', { name: '방문 기록 설정' }).click();
   await page.getByRole('button', { name: '거부', exact: true }).click();
   await expect(page.getByRole('dialog')).not.toBeVisible();
   expect(errors).toEqual([]);
+});
+test('archive search is server-rendered and RSS exposes only publication summaries', async ({
+  browser,
+  request,
+}) => {
+  const context = await browser.newContext({ javaScriptEnabled: false });
+  try {
+    const page = await context.newPage();
+    await page.goto('/posts');
+    await page.getByRole('searchbox', { name: '제목과 요약 검색' }).fill('PostgreSQL');
+    await page.getByRole('button', { name: '검색', exact: true }).click();
+    await expect(page.getByRole('heading', { name: '“PostgreSQL” 검색 결과' })).toBeVisible();
+    await expect(page.getByRole('article')).toHaveCount(1);
+    await page.goto('/posts?q=일치하지않는값');
+    await expect(page.getByText('조건에 맞는 글이 없습니다.')).toBeVisible();
+    await page.getByRole('link', { name: '필터 지우기' }).click();
+    await expect(page.getByRole('article')).toHaveCount(6);
+    await page.goto('/posts?page=2');
+    await expect(page.getByRole('link', { name: '이전', exact: true })).toHaveAttribute(
+      'href',
+      '/posts',
+    );
+    await page.goto('/posts/small-server-architecture');
+    const outline = page.getByRole('navigation', { name: '본문 목차' });
+    await outline.getByRole('link', { name: '기본 원칙', exact: true }).click();
+    await expect(page).toHaveURL(/#article-section-2$/);
+    await expect(page.getByRole('heading', { name: '기본 원칙', exact: true })).toBeFocused();
+  } finally {
+    await context.close();
+  }
+  const feed = await request.get('/feed.xml');
+  expect(feed.ok()).toBe(true);
+  expect(feed.headers()['content-type']).toContain('application/rss+xml');
+  const xml = await feed.text();
+  expect(xml).toContain('<rss version="2.0"');
+  expect(xml).toContain('/posts/postgresql-small-pool');
+  expect(xml.match(/<item>/g)).toHaveLength(6);
+  const published = await request.get('/api/posts/postgresql-small-pool');
+  expect(published.ok()).toBe(true);
+  const { data } = await published.json();
+  expect(data.renderedHtml).toContain('<table>');
+  expect(data).not.toHaveProperty('source');
+  expect(published.headers()['cache-control']).toContain('no-store');
+  expect(published.headers()['content-security-policy']).toContain("object-src 'none'");
 });
 test('unauthorized management/write/internal endpoints reject access', async ({ request }) => {
   const write = await request.post('/api/posts', {

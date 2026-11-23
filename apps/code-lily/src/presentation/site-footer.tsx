@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { Flower2 } from 'lucide-react';
 import { AnalyticsConsent } from '@/modules/telemetry/presentation/analytics-consent';
+import { operatorName, privacyEmail } from '@/presentation/policy-contact';
 export function SiteFooter() {
   return (
     <footer className="mt-20 border-t border-line">
@@ -8,12 +9,17 @@ export function SiteFooter() {
         <div>
           <Link
             href="/"
-            className="inline-flex min-h-11 items-center gap-2 text-base font-bold text-ink"
+            className="inline-flex min-h-11 items-center gap-2 text-[1rem] font-bold text-ink"
           >
             <Flower2 size={18} />
             code-lily
           </Link>
-          <p className="mt-1 leading-6">기술을 배우고, 기록하고, 조금씩 더 나아가는 공간입니다.</p>
+          <p className="mt-1 leading-6">
+            운영자 {operatorName} ·{' '}
+            <a href={`mailto:${privacyEmail}`} className="break-all underline underline-offset-4">
+              {privacyEmail}
+            </a>
+          </p>
         </div>
         <div className="flex flex-col items-start gap-1 sm:items-end">
           <div className="flex flex-wrap items-center gap-x-5">

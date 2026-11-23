@@ -1,59 +1,77 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { cache } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { services } from '@/composition';
 import { Comments } from '@/modules/posts/presentation/comments';
+import { PostDate } from '@/modules/posts/presentation/post-date';
+import { PostBody } from '@/modules/posts/presentation/post-body';
+import { archiveHref } from '@/modules/posts/presentation/archive-query';
 import { AppError } from '@/modules/identity/domain/policy';
-export const revalidate = 300;
-export async function generateStaticParams() {
-  return [];
-}
+import { feedPath } from '@/presentation/publication';
+
+export const dynamic = 'force-dynamic';
+
 type Props = { params: Promise<{ slug: string }> };
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  try {
-    const post = await (await services()).posts.read((await params).slug);
-    return {
-      title: post.title,
-      description: post.excerpt,
-      alternates: { canonical: `/posts/${post.slug}` },
-    };
-  } catch {
-    return { title: '글을 찾을 수 없습니다' };
-  }
-}
-export default async function PostDetail({ params }: Props) {
+const publishedPost = cache(async (slug: string) => {
   const { posts } = await services();
-  const slug = (await params).slug;
-  const post = await posts.read(slug).catch((error) => {
+  try {
+    return await posts.readBySlug(slug);
+  } catch (error) {
     if (error instanceof AppError && [401, 403, 404].includes(error.status)) return null;
     throw error;
-  });
+  }
+});
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const post = await publishedPost((await params).slug);
+  if (!post) return { title: '글을 찾을 수 없습니다', robots: { index: false } };
+  return {
+    title: post.title,
+    description: post.excerpt,
+    alternates: {
+      canonical: `/posts/${encodeURIComponent(post.slug)}`,
+      types: { 'application/rss+xml': feedPath },
+    },
+    openGraph: {
+      type: 'article',
+      title: post.title,
+      description: post.excerpt,
+      publishedTime: post.publishedAt || post.createdAt,
+      modifiedTime: post.updatedAt,
+    },
+  };
+}
+
+export default async function PostDetail({ params }: Props) {
+  const post = await publishedPost((await params).slug);
   if (!post) notFound();
-  const comments = await posts.comments(post.id);
+
+  const { posts } = await services();
+  const comments = await posts.comments(post.id).catch((error) => {
+    if (error instanceof AppError && [401, 403, 404].includes(error.status)) notFound();
+    throw error;
+  });
   return (
-    <main id="main-content" className="post-shell">
-      <Link
-        href="/posts"
-        className="mb-10 inline-flex min-h-11 items-center gap-2 text-sm text-muted hover:text-ink"
-      >
-        <ArrowLeft size={16} />
-        모든 글
+    <main id="main-content" className="post-shell publication-reader">
+      <Link href="/posts" className="publication-link mb-7 text-sm sm:mb-10">
+        <ArrowLeft size={17} aria-hidden="true" /> 모든 글
       </Link>
       <article>
-        <header className="mb-10 border-b border-line pb-9">
-          <div className="flex flex-wrap gap-3 text-xs text-muted">
-            <span>{post.categoryName}</span>
-            <time dateTime={post.publishedAt || post.createdAt}>
-              {(post.publishedAt || post.createdAt).slice(0, 10).replaceAll('-', '.')}
-            </time>
+        <header className="mb-9 border-b border-line pb-8">
+          <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-accent">
+            <span className="font-mono">
+              <PostDate value={post.publishedAt || post.createdAt} />
+            </span>
+            {post.categoryName ? <span>{post.categoryName}</span> : null}
             {post.bodyRemoved ? null : <span>{post.readMinutes}분 읽기</span>}
           </div>
-          <h1 className="mt-5 text-3xl leading-[1.4] font-bold tracking-[-.045em] sm:text-[40px]">
-            {post.title}
-          </h1>
-          <p className="mt-5 text-sm leading-7 text-muted">{post.excerpt}</p>
-          <p className="mt-5 text-xs text-muted">{post.authorName}</p>
+          <h1 className="publication-post-title mt-4">{post.title}</h1>
+          {post.excerpt ? (
+            <p className="mt-5 text-[1rem] leading-8 text-muted sm:text-lg">{post.excerpt}</p>
+          ) : null}
+          <p className="mt-5 text-sm text-muted">{post.authorName}</p>
         </header>
         {post.bodyRemoved ? (
           <p className="rounded-lg border border-line p-5 text-sm leading-7 text-muted">
@@ -61,23 +79,22 @@ export default async function PostDetail({ params }: Props) {
             있습니다.
           </p>
         ) : (
-          <div
-            className="content-body sun-editor-editable"
-            dangerouslySetInnerHTML={{ __html: post.renderedHtml }}
-          />
+          <PostBody renderedHtml={post.renderedHtml} />
         )}
-        <ul className="mt-10 flex flex-wrap gap-2" aria-label="글 태그">
-          {post.tags.map((tag) => (
-            <li key={tag}>
-              <Link
-                href={`/posts?tag=${encodeURIComponent(tag)}`}
-                className="inline-flex min-h-9 items-center rounded-full border border-line px-3 text-xs text-muted"
-              >
-                # {tag}
-              </Link>
-            </li>
-          ))}
-        </ul>
+        {post.tags.length > 0 ? (
+          <ul
+            className="mt-8 flex flex-wrap gap-x-5 border-t border-line pt-3 text-sm"
+            aria-label="글 태그"
+          >
+            {[...new Set(post.tags)].map((tag) => (
+              <li key={tag}>
+                <Link href={archiveHref({ tag })} className="publication-link">
+                  #{tag}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        ) : null}
       </article>
       <Comments key={post.id} postId={post.id} initialComments={comments} />
     </main>

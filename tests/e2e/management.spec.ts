@@ -202,12 +202,15 @@ test('OWNER: category → Markdown Post → publish → member comment → About
   });
   expect(errors).toEqual([]);
 });
-test('production ISR returns cache hits for public pages', async ({ request }) => {
+test('public archive and article reflect current published data while About retains ISR', async ({
+  request,
+}) => {
   test.skip(process.env.CODELILY_AUTH_FIXTURE !== '1', 'Requires production fixture.');
-  await request.get('/posts');
-  const cached = await request.get('/posts');
-  expect(cached.headers()['x-nextjs-cache']).toBe('HIT');
-  expect(cached.headers()['cache-control']).toContain('s-maxage=300');
+  for (const url of ['/', '/posts', '/posts/postgresql-small-pool']) {
+    const response = await request.get(url);
+    expect(response.ok()).toBe(true);
+    expect(response.headers()['cache-control']).toContain('no-store');
+  }
   const about = await request.get('/about');
   expect(about.headers()['cache-control']).toContain('s-maxage=300');
 });

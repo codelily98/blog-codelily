@@ -3,9 +3,12 @@
   "version": "0.1.0",
   "private": true,
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./article": "./src/article.ts"
   },
   "dependencies": {
+    "dom-serializer": "3.1.1",
+    "htmlparser2": "12.0.0",
     "sanitize-html": "2.18.1",
     "unified": "11.0.5",
     "remark-parse": "11.0.0",

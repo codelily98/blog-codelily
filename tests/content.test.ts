@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { renderContent, sanitizeContent } from '../packages/content/src/index';
+import { prepareArticleContent } from '../packages/content/src/article';
 test('HTML keeps safe formatting and removes executable content', () => {
   const html = sanitizeContent(
     '<h2>제목</h2><p style="text-align:center;color:#ff0000;position:fixed;background-image:url(javascript:alert(1))">서식</p><script>alert(1)</script><a href="javascript:alert(1)" onclick="alert(1)">링크</a><img src="https://example.com/image.png" alt="설명" onerror="alert(1)"><iframe src="https://example.com"></iframe>',
@@ -35,4 +36,18 @@ test('task list completion survives sanitization and Work can exclude remote ima
   const work = await renderContent(source, 'MARKDOWN', { allowImages: false });
   assert.doesNotMatch(work, /<img/);
   assert.match(work, /checked="checked"/);
+});
+
+test('article outline adds unique anchors to sanitized headings and keeps their plain labels', () => {
+  const { html, outline } = prepareArticleContent(
+    '<h1 id="original">설정 &amp; 실행</h1><h3><strong>설치</strong></h3><h2>설정 &amp; 실행</h2>',
+  );
+  assert.deepEqual(outline, [
+    { id: 'article-section-1', title: '설정 & 실행', level: 2 },
+    { id: 'article-section-2', title: '설치', level: 3 },
+    { id: 'article-section-3', title: '설정 & 실행', level: 2 },
+  ]);
+  assert.match(html, /<h2 id="article-section-1" tabindex="-1">설정 &amp; 실행<\/h2>/);
+  assert.match(html, /<h3 id="article-section-2" tabindex="-1"><strong>설치<\/strong><\/h3>/);
+  assert.doesNotMatch(html, /id="original"/);
 });
