@@ -7,7 +7,7 @@ import {
   writer,
   type Actor,
 } from '../../identity/domain/policy';
-import type { PostInput, PostRepository, PostSummary } from '../domain/models';
+import type { Post, PostInput, PostRepository, PostSummary } from '../domain/models';
 
 export class PostsService {
   constructor(private repository: PostRepository) {}
@@ -42,8 +42,26 @@ export class PostsService {
     if (!(await this.repository.setWithdrawnVisibility(id, status, actor.id)))
       throw new AppError(404, '탈퇴 회원의 글을 찾을 수 없습니다.');
   }
-  async read(id: string, actor: Actor | null = null) {
-    const post = await this.repository.find(id);
+  async read(idOrSlug: string, actor: Actor | null = null) {
+    const post =
+      (await this.repository.findById(idOrSlug)) ?? (await this.repository.findBySlug(idOrSlug));
+    return this.checkReadAccess(post, actor);
+  }
+  async readById(id: string, actor: Actor | null = null) {
+    return this.checkReadAccess(await this.repository.findById(id), actor);
+  }
+  async readBySlug(slug: string) {
+    return this.checkReadAccess(await this.repository.findBySlug(slug), null);
+  }
+  async readForApi(idOrSlug: string, actor: Actor | null) {
+    const post = await this.read(idOrSlug, actor);
+    if (actor?.role === 'OWNER' || (actor?.role === 'EDITOR' && actor.id === post.authorId)) {
+      return post;
+    }
+    const { source: _source, ...published } = post;
+    return published;
+  }
+  private checkReadAccess(post: Post | null, actor: Actor | null) {
     if (!post) throw new AppError(404, '글을 찾을 수 없습니다.', 'NOT_FOUND');
     if (post.status !== 'PUBLISHED') owned(actor, post.authorId);
     return post;
@@ -51,7 +69,7 @@ export class PostsService {
   async save(input: PostInput, actor: Actor | null) {
     writer(actor);
     if (input.id) {
-      const existing = await this.repository.find(input.id);
+      const existing = await this.repository.findById(input.id);
       if (!existing) throw new AppError(404, '글을 찾을 수 없습니다.');
       owned(actor, existing.authorId);
       if (existing.bodyRemoved)
@@ -71,7 +89,7 @@ export class PostsService {
     );
   }
   async delete(id: string, actor: Actor | null) {
-    const post = await this.read(id, actor);
+    const post = await this.readById(id, actor);
     owned(actor, post.authorId);
     if (post.bodyRemoved)
       throw new AppError(409, '댓글을 보존하는 글은 비공개로 전환할 수 있습니다.');
@@ -94,12 +112,12 @@ export class PostsService {
     return this.repository.deleteCategory(id, actor.id);
   }
   async comments(id: string) {
-    const post = await this.read(id);
+    const post = await this.readById(id);
     return this.repository.comments(post.id);
   }
   async addComment(id: string, body: string, actor: Actor | null) {
     authenticated(actor);
-    const post = await this.read(id);
+    const post = await this.readById(id);
     return this.repository.addComment(post.id, body, actor.id);
   }
   async deleteComment(id: string, actor: Actor | null) {

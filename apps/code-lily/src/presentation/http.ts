@@ -9,10 +9,29 @@ export function requireSameOrigin(request: Request) {
     throw new AppError(403, '허용되지 않은 요청 출처입니다.', 'ORIGIN_REJECTED');
 }
 export async function jsonBody(request: Request) {
-  if (Number(request.headers.get('content-length') || 0) > 600_000)
+  const maxBytes = 600_000;
+  if (Number(request.headers.get('content-length') || 0) > maxBytes)
     throw new AppError(413, '요청이 너무 큽니다.');
-  const text = await request.text();
-  if (Buffer.byteLength(text) > 600_000) throw new AppError(413, '요청이 너무 큽니다.');
+  const reader = request.body?.getReader();
+  if (!reader) throw new AppError(400, '올바른 JSON 요청이 필요합니다.');
+  const decoder = new TextDecoder();
+  let text = '';
+  let bytes = 0;
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      bytes += value.byteLength;
+      if (bytes > maxBytes) {
+        void reader.cancel().catch(() => {});
+        throw new AppError(413, '요청이 너무 큽니다.');
+      }
+      text += decoder.decode(value, { stream: true });
+    }
+    text += decoder.decode();
+  } finally {
+    reader.releaseLock();
+  }
   try {
     return JSON.parse(text);
   } catch {

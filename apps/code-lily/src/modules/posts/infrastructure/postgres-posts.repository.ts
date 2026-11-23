@@ -22,6 +22,7 @@ const categorySelect = `SELECT c.id,c.name,c.slug,c.owner_id AS "ownerId",count(
 const commentSelect = `SELECT c.id,c.post_id AS "postId",c.author_id AS "authorId",coalesce(u.name,'탈퇴한 회원') AS "authorName",c.body,c.created_at AS "createdAt"
   FROM comments c LEFT JOIN "user" u ON u.id=c.author_id`;
 const serialize = <T>(value: T): T => JSON.parse(JSON.stringify(value));
+const postId = /^[\da-f]{8}(?:-[\da-f]{4}){3}-[\da-f]{12}$/i;
 async function audit(connection: Connection, actorId: string, action: string, id: string) {
   await connection.query('INSERT INTO audit_logs(actor_id,action,entity_id) VALUES($1,$2,$3)', [
     actorId,
@@ -102,13 +103,16 @@ export class PostgresPostsRepository implements PostRepository {
       ).rows,
     );
   }
-  async find(idOrSlug: string) {
+  findById(id: string) {
+    if (!postId.test(id)) return Promise.resolve(null);
+    return this.find('p.id', id);
+  }
+  findBySlug(slug: string) {
+    return this.find('p.slug', slug);
+  }
+  private async find(column: 'p.id' | 'p.slug', value: string) {
     return serialize(
-      (
-        await this.db.query<Post>(`${postSelect} WHERE p.id::text=$1 OR p.slug=$1 LIMIT 1`, [
-          idOrSlug,
-        ])
-      ).rows[0] ?? null,
+      (await this.db.query<Post>(`${postSelect} WHERE ${column}=$1`, [value])).rows[0] ?? null,
     );
   }
   async save(input: PostInput & { renderedHtml: string }, actorId: string) {
@@ -139,7 +143,7 @@ export class PostgresPostsRepository implements PostRepository {
       await audit(connection, actorId, 'post.saved', id);
       return id;
     });
-    return (await this.find(id))!;
+    return (await this.findById(id))!;
   }
   async setWithdrawnVisibility(id: string, status: PostSummary['status'], actorId: string) {
     return transaction(this.db, async (connection) => {

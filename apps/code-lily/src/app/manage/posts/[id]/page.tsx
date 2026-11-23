@@ -8,7 +8,7 @@ export default async function EditPost({ params }: { params: Promise<{ id: strin
   const { posts } = await services();
   const [post, categories] = await Promise.all([
     managementAccess(async () => {
-      const post = await posts.read((await params).id, actor);
+      const post = await posts.readById((await params).id, actor);
       owned(actor, post.authorId);
       return post;
     }),

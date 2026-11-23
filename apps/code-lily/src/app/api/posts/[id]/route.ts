@@ -6,7 +6,7 @@ import { invalidatePosts } from '@/presentation/invalidate';
 type Context = { params: Promise<{ id: string }> };
 export function GET(request: Request, context: Context) {
   return api(request, async (actor) =>
-    (await services()).posts.read((await context.params).id, actor),
+    (await services()).posts.readForApi((await context.params).id, actor),
   );
 }
 export function PUT(request: Request, context: Context) {

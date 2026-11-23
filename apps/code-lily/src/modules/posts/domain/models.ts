@@ -66,7 +66,8 @@ export interface PostRepository {
     offset?: number;
   }): Promise<PostSummary[]>;
   publishedCount(): Promise<number>;
-  find(idOrSlug: string): Promise<Post | null>;
+  findById(id: string): Promise<Post | null>;
+  findBySlug(slug: string): Promise<Post | null>;
   save(input: PostInput & { renderedHtml: string }, actorId: string): Promise<Post>;
   setWithdrawnVisibility(
     id: string,

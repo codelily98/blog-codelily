@@ -14,7 +14,9 @@ test('real PostgreSQL SQL: content, ownership, comments, About and telemetry', a
   await engine.exec('CREATE SCHEMA blog_schema');
   await engine.exec(await readFile('apps/code-lily/migrations/001_initial.sql', 'utf8'));
   await engine.exec(await readFile('apps/code-lily/migrations/003_member_withdrawal.sql', 'utf8'));
-  await engine.exec(await readFile('apps/code-lily/migrations/004_withdrawn_post_visibility.sql', 'utf8'));
+  await engine.exec(
+    await readFile('apps/code-lily/migrations/004_withdrawn_post_visibility.sql', 'utf8'),
+  );
   const db = new EmbeddedPool(engine);
   const owner: Actor = { id: 'owner', name: 'Owner', email: 'owner@local.invalid', role: 'OWNER' };
   const editor: Actor = {
@@ -64,6 +66,13 @@ test('real PostgreSQL SQL: content, ownership, comments, About and telemetry', a
     const published = await posts.save({ ...post, status: 'PUBLISHED' }, editor);
     assert.match(published.renderedHtml, /<h2>안전한 본문<\/h2>/);
     assert.equal((await posts.list({ category: 'react' })).length, 1);
+    assert.equal((await posts.readById(post.id)).id, post.id);
+    assert.equal((await posts.readBySlug(post.slug)).id, post.id);
+    await assert.rejects(() => posts.readById(post.slug), { status: 404 });
+    await assert.rejects(() => posts.readBySlug(post.id), { status: 404 });
+    assert.equal('source' in (await posts.readForApi(post.slug, null)), false);
+    assert.equal('source' in (await posts.readForApi(post.slug, member)), false);
+    assert.equal('source' in (await posts.readForApi(post.slug, editor)), true);
     assert.equal((await posts.list({ q: "' OR 1=1 --" })).length, 0);
     const comment = await posts.addComment(post.id, '댓글입니다.', member);
     await assert.rejects(() => posts.deleteComment(comment.id, editor), { status: 403 });
@@ -92,6 +101,7 @@ test('real PostgreSQL SQL: content, ownership, comments, About and telemetry', a
     assert.ok(stats.logs.length >= 4);
     await posts.deleteCategory(category.id, editor);
     assert.equal((await posts.read(post.id)).categoryId, null);
+    await assert.rejects(() => posts.delete(post.slug, editor), { status: 404 });
     await posts.delete(post.id, editor);
     assert.equal((await posts.list({})).length, 0);
   } finally {
