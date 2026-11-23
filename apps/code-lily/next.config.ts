@@ -14,6 +14,7 @@ const config: NextConfig = {
     '@codelily/contracts',
   ],
   poweredByHeader: false,
+  images: { unoptimized: true },
   serverExternalPackages: ['pg', '@electric-sql/pglite'],
   experimental: { serverActions: { bodySizeLimit: '1mb' } },
   async headers() {
@@ -25,6 +26,10 @@ const config: NextConfig = {
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
           { key: 'X-Frame-Options', value: 'DENY' },
           { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
+          {
+            key: 'Content-Security-Policy',
+            value: "base-uri 'none'; object-src 'none'; frame-ancestors 'none'; form-action 'self'",
+          },
         ],
       },
       { source: '/api/:path*', headers: [{ key: 'Cache-Control', value: 'private, no-store' }] },

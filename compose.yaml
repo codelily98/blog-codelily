@@ -8,7 +8,7 @@ services:
       dockerfile: infra/Dockerfile
       target: runtime
       args:
-        NODE_IMAGE: ${LOCAL_NODE_IMAGE:-node:24-bookworm-slim}
+        NODE_IMAGE: ${LOCAL_NODE_IMAGE:-node:24.22.3-bookworm-slim@sha256:dc26ae92c9fb15cf6b1d63e20f0944b2efe0f115b20e00be48fb23fceb061c54}
     env_file: ./.local/web.env
     environment:
       NODE_ENV: production
