@@ -53,6 +53,13 @@ test('public homepage renders recent articles, RSS, Pretendard and policy links'
     ])
       await expect(main.getByRole('link', { name, exact: true })).toHaveAttribute('href', href);
     const footer = page.getByRole('contentinfo');
+    const headerLogo = page.getByRole('link', { name: 'code-lily 홈' }).locator('img');
+    const footerLogo = footer.getByRole('link', { name: 'code-lily', exact: true }).locator('img');
+    await expect(headerLogo).toHaveAttribute('src', /\/icon\.[^/]+\.svg$/);
+    await expect(footerLogo).toHaveAttribute('src', (await headerLogo.getAttribute('src'))!);
+    await expect
+      .poll(() => headerLogo.evaluate((image: HTMLImageElement) => image.naturalWidth))
+      .toBeGreaterThan(0);
     await expect(footer.getByRole('link', { name: '개인정보처리방침' })).toHaveAttribute(
       'href',
       '/privacy',
@@ -74,6 +81,29 @@ test('public homepage renders recent articles, RSS, Pretendard and policy links'
     await expect(page.getByRole('heading', { name: 'Google 계정으로 로그인' })).toBeVisible();
   }
   expect(errors).toEqual([]);
+});
+
+test('the SVG icon and multi-size ICO favicon are served directly', async ({ page, request }) => {
+  await page.goto('/');
+  const svg = await page.locator('link[rel="icon"][href^="/icon.svg"]').getAttribute('href');
+  const ico = await page.locator('link[rel="icon"][href^="/favicon.ico"]').getAttribute('href');
+  expect(svg).toBeTruthy();
+  expect(ico).toBeTruthy();
+
+  const vector = await request.get(svg!, { maxRedirects: 0 });
+  expect(vector.status()).toBe(200);
+  expect(vector.headers()['content-type']).toContain('image/svg+xml');
+
+  const favicon = await request.get(ico!, { maxRedirects: 0 });
+  expect(favicon.status()).toBe(200);
+  expect(favicon.headers()['content-type']).toMatch(/image\/(x-icon|vnd\.microsoft\.icon)/);
+  const body = await favicon.body();
+  expect(body.readUInt32LE(0)).toBe(0x0001_0000);
+  const sizes = Array.from(
+    { length: body.readUInt16LE(4) },
+    (_, index) => body[6 + index * 16] || 256,
+  );
+  expect(sizes).toEqual([16, 24, 32, 48, 64, 128, 256]);
 });
 
 test('Google login skips consent and signup requires both declarations; policy review is accessible', async ({

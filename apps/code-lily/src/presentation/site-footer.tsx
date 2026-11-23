@@ -1,7 +1,8 @@
+import Image from 'next/image';
 import Link from 'next/link';
-import { Flower2 } from 'lucide-react';
 import { AnalyticsConsent } from '@/modules/telemetry/presentation/analytics-consent';
 import { operatorName, privacyEmail } from '@/presentation/policy-contact';
+import brandMark from '@/app/icon.svg';
 export function SiteFooter() {
   return (
     <footer className="mt-20 border-t border-line">
@@ -11,7 +12,7 @@ export function SiteFooter() {
             href="/"
             className="inline-flex min-h-11 items-center gap-2 text-[1rem] font-bold text-ink"
           >
-            <Flower2 size={18} />
+            <Image src={brandMark} alt="" width={22} height={22} unoptimized />
             code-lily
           </Link>
           <p className="mt-1 leading-6">

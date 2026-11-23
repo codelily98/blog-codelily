@@ -23,14 +23,6 @@
   margin-inline: auto;
   padding-inline: clamp(20px, 5.5vw, 82px);
 }
-.publication-brand-icon {
-  display: grid;
-  place-items: center;
-  width: 34px;
-  height: 34px;
-  background: #c7e7a8;
-  color: #172817;
-}
 .publication-hero {
   display: grid;
   grid-template-columns: minmax(0, 1.08fr) minmax(0, 0.92fr);

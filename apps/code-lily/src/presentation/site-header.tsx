@@ -1,12 +1,14 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { Flower2, Search } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { Button, Dialog, Input, ThemeToggle } from '@codelily/ui';
 import { GoogleLoginButton, useSession } from '@/modules/identity/presentation/session-provider';
 import { archiveHref } from '@/modules/posts/presentation/archive-query';
+import brandMark from '@/app/icon.svg';
 
 export function SiteHeader() {
   const pathname = usePathname();
@@ -41,9 +43,7 @@ export function SiteHeader() {
             aria-label="code-lily 홈"
             className="col-start-1 row-start-1 flex min-h-16 w-fit items-center gap-2.5 text-[1.65rem] font-bold tracking-tight"
           >
-            <span className="publication-brand-icon" aria-hidden="true">
-              <Flower2 size={22} strokeWidth={1.8} />
-            </span>
+            <Image src={brandMark} alt="" width={34} height={34} unoptimized className="shrink-0" />
             <span>code-lily</span>
           </Link>
           <nav
