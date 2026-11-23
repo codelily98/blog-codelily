@@ -2,6 +2,11 @@
 
 운영 도메인 `https://blog.codelily.kr` · 최초 OWNER `codelily98@gmail.com`
 
+## 2026-11-24 카라꽃 로고
+
+- 헤더·푸터에는 자체 SVG 심벌을 쓰고 브라우저 탭에는 동일 디자인의 SVG와 7개 크기 ICO를 제공한다. [디자인 기준](../design/구현-기준.md)
+- `97ab96c`의 `logo-94ec854afc01`를 00:41:17 KST에 운영 활성화했다. 데스크톱·모바일, SVG·ICO 원본 일치, 기존 경로와 readiness, 외부 암호화 복구 지점을 검증했다. 타입·경계·빌드·테스트 27개 및 격리 Chrome E2E 12개를 통과했다. [릴리스 명세](../../infra/releases/2026-11-24-logo-active.json)
+
 ## 2026-11-24 공개 블로그 운영 릴리스
 
 - `cb9ca57` 기반 `publication-f1dbdd4f085a`를 00:22:30 KST에 활성화했다. 앱·도구 이미지 참조를 전환했고 운영 스키마는 기존 006 상태다. [활성 릴리스 명세](../../infra/releases/2026-11-24-publication-active.json)
