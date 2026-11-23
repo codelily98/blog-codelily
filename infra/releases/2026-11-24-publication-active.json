@@ -1,0 +1,117 @@
+{
+  "release": "publication-f1dbdd4f085a",
+  "state": "production-active",
+  "platform": "linux/amd64",
+  "delivery": "docker-save-scp-load",
+  "sourceCommit": "cb9ca57345a994b734075dabc2c775ad8ed0a4c5",
+  "sourceArchiveSha256": "f1dbdd4f085a8691ddd2d4be1bd1d02e98b3655150a38c20c09e621b504e42df",
+  "sourceFiles": 260,
+  "nodeImage": "node:24.22.3-bookworm-slim@sha256:dc26ae92c9fb15cf6b1d63e20f0944b2efe0f115b20e00be48fb23fceb061c54",
+  "images": {
+    "blog": "sha256:41439078428fa876236cb2aca375cfabcb185bfc57a529f3717227a2781fe1db",
+    "migrator": "sha256:61edaff3051487e17b082bf0ac2babec995db0950f3e0433bc9a970e2a725c2d"
+  },
+  "previousImages": {
+    "blog": "sha256:37744528264d7ce6db6c5e5066767cde47bd74de0e77121b95b2dea72e3b312b",
+    "migrator": "sha256:2cadd85e8cd3dfcf06d58dab53baf357add5ea3a020ee41a97ad9c03777439d1"
+  },
+  "migrationChanges": false,
+  "migrationAppliedThrough": "006_work.sql",
+  "migrationVersions": [
+    "001_initial.sql",
+    "002_rate_limit_retention.sql",
+    "003_member_withdrawal.sql",
+    "004_withdrawn_post_visibility.sql",
+    "005_withdrawal_upload_settlement.sql",
+    "006_work.sql"
+  ],
+  "unchangedConfiguration": {
+    "infra/compose.production.yml": "56d6cbf0f1162baaef125f51f171d81fb2dd0c1063d22aa034c185aba9f316d7",
+    "infra/postgres/post-migration.sql": "2e46a047607db5794c079e290e08dd2f936a4f2e32936b4b08378ac9c18c8e05",
+    "apps/code-lily/migrations/001_initial.sql": "dbf0e2a50b5771fea8dc3477126d3ed2cbf2327f8315a1b32bc8bc34e27da2df",
+    "apps/code-lily/migrations/002_rate_limit_retention.sql": "dd5e9ea3ca6cf22a4cd139dcaf2e8c3c16eb8a63887fe24d350032f3ce8456ad",
+    "apps/code-lily/migrations/003_member_withdrawal.sql": "7940e017015ddcbe3c6afeb68a1e8c26edbc84f5635e784909a44efd3340f4e5",
+    "apps/code-lily/migrations/004_withdrawn_post_visibility.sql": "e2e8dab70866e9ec02f508b8775388360091d9187c08023903d8731065865216",
+    "apps/code-lily/migrations/005_withdrawal_upload_settlement.sql": "ae134c35ee60995ead479788d4b89694a72e47c813a34f5a8a00fee490e9f367",
+    "apps/code-lily/migrations/006_work.sql": "5b747f9ed7bb027ae5e35a0c05423d9c09386139a29f700ce746381af04acd3f"
+  },
+  "policyStatus": "public-review-draft",
+  "preDeploymentEncryptedSnapshot": "20261123T152023Z",
+  "rollbackReference": "2026-11-07-google-signup-active.json",
+  "archiveBytes": 613880475,
+  "sha256": {
+    "codelily-publication-linux-amd64.tar.gz": "c36231d3abd8566b1241c8c4d09f6c69ea94f9c5500333da05c5bb92b90a5e9f",
+    "build-source.tar": "f1dbdd4f085a8691ddd2d4be1bd1d02e98b3655150a38c20c09e621b504e42df",
+    "apply-publication-release.py": "5aaee2066d749745af97e9dce803e3959dad2e0956a8646486f81278dcb986a6"
+  },
+  "validation": {
+    "linuxBuild": true,
+    "nodeVersion": "24.22.3",
+    "typecheck": true,
+    "boundaries": true,
+    "unitAndSqlTests": 27,
+    "npmAuditFindings": 0,
+    "postgresVersion": "16.15",
+    "postgresRuntimeE2E": true,
+    "chromeE2E": 11,
+    "viewports": [
+      "1487x1058",
+      "1440x1100",
+      "390x844"
+    ],
+    "googleCallbackFixture": true
+  },
+  "activatedAt": "2026-11-24T00:22:30+09:00",
+  "externalSnapshotVerified": true,
+  "preDeploymentEncryptedSnapshotVerifiedOffHost": true,
+  "postDeploymentEncryptedSnapshot": "20261123T152315Z",
+  "postDeploymentEncryptedSnapshotVerifiedOffHost": true,
+  "productionVerification": {
+    "checkedAt": "2026-11-23T15:23:22.482Z",
+    "pages": {
+      "/": 200,
+      "/health/ready": 200,
+      "/posts": 200,
+      "/about": 200,
+      "/privacy": 200,
+      "/terms": 200,
+      "/sign-in": 200,
+      "/sign-in?mode=signup": 200,
+      "/sign-in?error=signup_disabled": 200,
+      "/feed.xml": 200
+    },
+    "authStarts": {
+      "signupMissingTerms": 400,
+      "loginWithoutDeclarations": 200,
+      "signupWithDeclarations": 200
+    },
+    "anonymousWorkStatus": 401,
+    "internalPublicStatus": 404,
+    "neighborStatus": 200,
+    "authPrivateNoStore": true,
+    "googleAuthorizationRedirectVerified": true,
+    "actualGoogleAccountRoundTrip": "not-checked-in-production",
+    "newHomepage": true,
+    "coverAssetVerified": true,
+    "pretendardAssetVerified": true,
+    "crossOriginWriteStatus": 403,
+    "publishedArticleChecked": false,
+    "appHealth": "healthy",
+    "appRestartCount": 0,
+    "backupTimer": "active",
+    "maintenanceTimer": "active",
+    "schemaAndPrivilegeChecks": "passed",
+    "r2ReadOnly": {
+      "checked": true,
+      "publicHeadBucket": true,
+      "privateHeadBucket": true
+    },
+    "coverEdgeCache": "HIT",
+    "browser": {
+      "desktopHomepage": true,
+      "mobileSearch": true,
+      "mobileViewport": "390x844",
+      "horizontalOverflow": false
+    }
+  }
+}
