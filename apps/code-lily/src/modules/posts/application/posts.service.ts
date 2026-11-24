@@ -9,6 +9,8 @@ import {
 } from '../../identity/domain/policy';
 import type {
   Post,
+  PostDraft,
+  PostDraftWrite,
   PostInput,
   PostPreviewInput,
   PostReaderDetails,
@@ -53,13 +55,20 @@ export class PostsService {
   }
   async publicSeries(post: Post) {
     if (!post.series || post.status !== 'PUBLISHED' || post.bodyRemoved) return null;
+    const series = await this.publicSeriesById(post.series.id);
+    if (!series) return null;
+    const index = series.entries.findIndex((entry) => entry.slug === post.slug);
+    return index < 0 ? null : { ...series, index };
+  }
+  publicSeriesPage(page: number) {
+    return this.repository.publicSeriesPage((page - 1) * 24, 25);
+  }
+  async publicSeriesById(id: string) {
     const [series, entries] = await Promise.all([
-      this.repository.findSeries(post.series.id),
-      this.repository.publishedSeriesEntries(post.series.id),
+      this.repository.findSeries(id),
+      this.repository.publishedSeriesEntries(id),
     ]);
-    const index = entries.findIndex((entry) => entry.slug === post.slug);
-    if (!series || index < 0) return null;
-    return { name: series.name, entries, index };
+    return series && entries.length ? { id, name: series.name, entries } : null;
   }
   list(filters: Parameters<PostRepository['list']>[0]) {
     return this.repository.list({ ...filters, includeDrafts: false });
@@ -98,7 +107,7 @@ export class PostsService {
     return this.checkReadAccess(await this.repository.findBySlug(slug), null);
   }
   async readForApi(idOrSlug: string, actor: Actor | null) {
-    const post = await this.read(idOrSlug, actor);
+    const { editVersion: _editVersion, ...post } = await this.read(idOrSlug, actor);
     if (actor?.role === 'OWNER' || (actor?.role === 'EDITOR' && actor.id === post.authorId)) {
       return post;
     }
@@ -116,6 +125,90 @@ export class PostsService {
     if (!post) throw new AppError(404, '글을 찾을 수 없습니다.');
     owned(actor, post.authorId);
     return post;
+  }
+  listDrafts(actor: Actor | null) {
+    writer(actor);
+    return this.repository.listDrafts(actor.role === 'OWNER' ? undefined : actor.id);
+  }
+  async findEditableDraft(id: string, actor: Actor | null) {
+    writer(actor);
+    const draft = await this.repository.findDraft(id);
+    if (!draft) return null;
+    owned(actor, draft.ownerId);
+    if (draft.postId) {
+      const post = await this.editablePost(draft.postId, actor);
+      if (post.bodyRemoved) throw new AppError(404, '초안을 찾을 수 없습니다.');
+    }
+    return draft;
+  }
+  async readDraft(id: string, actor: Actor | null) {
+    const draft = await this.findEditableDraft(id, actor);
+    if (!draft) throw new AppError(404, '초안을 찾을 수 없습니다.');
+    return draft;
+  }
+  async saveDraft(input: PostDraftWrite, actor: Actor | null) {
+    writer(actor);
+    if (
+      (input.postId !== null && input.postId !== input.id) ||
+      (input.postId === null) !== (input.baseVersion === null)
+    )
+      throw new AppError(400, '초안 대상을 확인해주세요.');
+    const [existing, post] = await Promise.all([
+      this.repository.findDraft(input.id),
+      input.postId ? this.editablePost(input.postId, actor) : null,
+    ]);
+    if (existing) owned(actor, existing.ownerId);
+    if (
+      existing &&
+      (input.postId !== existing.postId ||
+        (input.version && input.baseVersion !== existing.baseVersion))
+    )
+      throw draftConflict();
+    if (post?.bodyRemoved) throw new AppError(409, '본문이 삭제된 글은 편집할 수 없습니다.');
+    const ownerId = existing?.ownerId ?? post?.authorId ?? actor.id;
+    const draft = await this.repository.saveDraft(input, ownerId);
+    if (!draft) throw draftConflict();
+    return { version: draft.version, updatedAt: draft.updatedAt, baseVersion: draft.baseVersion };
+  }
+  async deleteDraft(id: string, version: string, actor: Actor | null) {
+    const draft = await this.readDraft(id, actor);
+    if (draft.version !== version || !(await this.repository.deleteDraft(draft)))
+      throw draftConflict();
+  }
+  async publishDraft(
+    draft: PostDraft,
+    input: PostInput,
+    postVersion: number | null,
+    confirmBase: boolean,
+    actor: Actor | null,
+  ) {
+    writer(actor);
+    owned(actor, draft.ownerId);
+    const { post, prepared } = await this.prepare(
+      { ...input, id: draft.postId ?? undefined, status: 'PUBLISHED' },
+      actor,
+    );
+    if (
+      (post?.editVersion ?? null) !== postVersion ||
+      (draft.baseVersion !== postVersion && !confirmBase)
+    )
+      throw new AppError(
+        409,
+        '공개본이 변경되었습니다. 현재 글을 확인한 뒤 발행해주세요.',
+        'POST_BASE_CONFLICT',
+      );
+    const id = await this.repository.applyDraft(draft, prepared, actor.id, postVersion);
+    return { id };
+  }
+  async unpublish(id: string, postVersion: number, actor: Actor | null) {
+    writer(actor);
+    await this.editablePost(id, actor);
+    if (!(await this.repository.unpublish(id, postVersion, actor.id)))
+      throw new AppError(
+        409,
+        '공개 상태가 바뀌었습니다. 현재 글을 다시 확인해주세요.',
+        'POST_BASE_CONFLICT',
+      );
   }
   private async editableContent(input: Pick<PostInput, 'id' | 'categoryId'>, actor: Actor) {
     const post = input.id ? await this.editablePost(input.id, actor) : null;
@@ -143,6 +236,9 @@ export class PostsService {
   }
   async save(input: PostInput, actor: Actor | null) {
     writer(actor);
+    return this.repository.save((await this.prepare(input, actor)).prepared, actor.id);
+  }
+  private async prepare(input: PostInput, actor: Actor) {
     const { post } = await this.editableContent(input, actor);
     if (input.series) {
       const series = await this.repository.findSeries(input.series.id);
@@ -154,10 +250,10 @@ export class PostsService {
     const bodyText = plainText(renderedHtml);
     if (!bodyText && !renderedHtml.includes('<img'))
       throw new AppError(400, '본문을 입력해주세요.');
-    return this.repository.save(
-      { ...input, renderedHtml, excerpt: postExcerpt(input.excerpt, bodyText) },
-      actor.id,
-    );
+    return {
+      post,
+      prepared: { ...input, renderedHtml, excerpt: postExcerpt(input.excerpt, bodyText) },
+    };
   }
   async delete(id: string, actor: Actor | null) {
     const post = await this.readById(id, actor);
@@ -203,4 +299,12 @@ export class PostsService {
 
 function postExcerpt(excerpt: string, bodyText: string) {
   return excerpt || bodyText.slice(0, 180);
+}
+
+function draftConflict() {
+  return new AppError(
+    409,
+    '다른 탭에서 초안이 저장되었거나 삭제되었습니다.',
+    'POST_DRAFT_CONFLICT',
+  );
 }

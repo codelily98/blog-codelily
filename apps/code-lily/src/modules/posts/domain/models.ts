@@ -28,7 +28,30 @@ export interface Post extends PostSummary {
   format: ContentFormat;
   renderedHtml: string;
   series: PostSeriesPlacement | null;
+  editVersion: number;
 }
+export type PostDraftFields = Pick<
+  PostInput,
+  'slug' | 'title' | 'excerpt' | 'source' | 'format' | 'categoryId'
+> & {
+  tagsText: string;
+  seriesId: string | null;
+  seriesPosition: string;
+};
+export interface PostDraftWrite {
+  id: string;
+  postId: string | null;
+  baseVersion: number | null;
+  version: string | null;
+  fields: PostDraftFields;
+}
+export interface PostDraft extends Omit<PostDraftWrite, 'version'> {
+  ownerId: string;
+  version: string;
+  updatedAt: string;
+}
+export type DraftSummary = Pick<PostDraft, 'id' | 'postId' | 'updatedAt'> & { title: string };
+export type PreparedPost = PostInput & { renderedHtml: string };
 export interface PostSeriesPlacement {
   id: string;
   position: number;
@@ -39,6 +62,12 @@ export interface PostSeries {
   ownerId: string | null;
 }
 export type SeriesEntry = Pick<PostSummary, 'slug' | 'title'> & { position: number };
+export interface PublicSeriesSummary {
+  id: string;
+  name: string;
+  count: number;
+  firstSlug: string;
+}
 export type PostReaderDetails = Pick<
   PostSummary,
   'title' | 'excerpt' | 'tags' | 'categoryName' | 'authorName' | 'readMinutes' | 'bodyRemoved'
@@ -92,9 +121,21 @@ export interface PostRepository {
   saveSeries(input: { id?: string; name: string }, actorId: string): Promise<PostSeries>;
   deleteSeries(id: string, actorId: string): Promise<void>;
   publishedSeriesEntries(id: string): Promise<SeriesEntry[]>;
+  publicSeriesPage(offset: number, limit: number): Promise<PublicSeriesSummary[]>;
   findById(id: string): Promise<Post | null>;
   findBySlug(slug: string): Promise<Post | null>;
-  save(input: PostInput & { renderedHtml: string }, actorId: string): Promise<Post>;
+  save(input: PreparedPost, actorId: string): Promise<Post>;
+  findDraft(id: string): Promise<PostDraft | null>;
+  listDrafts(actorId?: string): Promise<DraftSummary[]>;
+  saveDraft(input: PostDraftWrite, ownerId: string): Promise<PostDraft | null>;
+  applyDraft(
+    draft: PostDraft,
+    input: PreparedPost,
+    actorId: string,
+    postVersion: number | null,
+  ): Promise<string>;
+  deleteDraft(draft: PostDraft): Promise<boolean>;
+  unpublish(id: string, postVersion: number, actorId: string): Promise<boolean>;
   setWithdrawnVisibility(
     id: string,
     status: PostSummary['status'],

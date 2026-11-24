@@ -18,6 +18,7 @@ export function SiteHeader() {
   const [query, setQuery] = useState('');
   const links = [
     { href: '/posts', label: 'Posts' },
+    { href: '/series', label: '시리즈' },
     { href: '/about', label: 'About' },
     ...(actor ? [{ href: '/work', label: 'Work' }] : []),
     ...(actor && actor.role !== 'MEMBER' ? [{ href: '/manage', label: '내 Posts' }] : []),

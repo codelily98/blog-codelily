@@ -59,6 +59,14 @@ test('withdrawal protects related data, detaches retained content and replays af
       await readFile('apps/code-lily/migrations/004_withdrawn_post_visibility.sql', 'utf8'),
     );
     await db.exec(await readFile('apps/code-lily/migrations/007_post_series.sql', 'utf8'));
+    await db.exec(await readFile('apps/code-lily/migrations/008_post_drafts.sql', 'utf8'));
+    await db.exec(`
+      INSERT INTO post_drafts (id, owner_id, post_id, base_version, fields)
+        SELECT id, author_id, id, edit_version, '{"title":"private edit"}'::jsonb
+        FROM posts WHERE slug IN ('keep-public', 'delete-public', 'owner-public');
+      INSERT INTO post_drafts (id, owner_id, fields)
+        VALUES (gen_random_uuid(), 'keep', '{"title":"private new draft"}'::jsonb);
+    `);
     assert.deepEqual((await db.query('SELECT DISTINCT body_removed FROM posts')).rows, [
       { body_removed: false },
     ]);
@@ -97,6 +105,9 @@ test('withdrawal protects related data, detaches retained content and replays af
       }
       const posts = new PostsService(new PostgresPostsRepository(new EmbeddedPool(database)));
       const retained = await posts.read('keep-public');
+      assert.deepEqual((await database.query('SELECT owner_id FROM post_drafts')).rows, [
+        { owner_id: 'owner' },
+      ]);
       assert.equal(retained.authorId, null);
       assert.equal(retained.authorName, '탈퇴한 회원');
       assert.equal(retained.categoryName, 'Shared category');

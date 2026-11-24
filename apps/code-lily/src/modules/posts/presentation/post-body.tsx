@@ -1,8 +1,10 @@
 import type { prepareArticleContent } from '@codelily/content/article';
+import { CodeCopyControls } from './code-copy-controls';
 
 export type ArticleContent = ReturnType<typeof prepareArticleContent>;
 
 export function PostBody({ html, outline, preview }: ArticleContent & { preview: boolean }) {
+  const copyEnabled = !preview && /<pre(?:\s|>)/i.test(html);
   return (
     <>
       {outline.length > 1 ? (
@@ -40,9 +42,11 @@ export function PostBody({ html, outline, preview }: ArticleContent & { preview:
         </nav>
       ) : null}
       <div
+        id={copyEnabled ? 'published-post-content' : undefined}
         className="content-body"
         dangerouslySetInnerHTML={{ __html: html }}
       />
+      {copyEnabled ? <CodeCopyControls contentId="published-post-content" /> : null}
     </>
   );
 }

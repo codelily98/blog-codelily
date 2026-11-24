@@ -16,6 +16,107 @@ async function authenticate(context: BrowserContext, role: string) {
   ]);
 }
 
+test('게시글 초안은 자동 저장·재시도·두 탭 충돌을 처리하며 공개본은 발행 때만 바뀐다', async ({
+  page,
+  context,
+  request,
+}) => {
+  test.skip(process.env.CODELILY_AUTH_FIXTURE !== '1', 'Requires isolated fixture sessions.');
+  const errors: string[] = [];
+  page.on('pageerror', (error) => errors.push(error.message));
+  await authenticate(context, 'editor');
+  const headers = { origin: 'http://localhost:3000' };
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/manage/posts/new');
+  const title = page.getByRole('textbox', { name: '제목', exact: true });
+  const autosave = page.getByRole('status', { name: '초안 저장 상태' });
+  let failOnce = true;
+  await page.route('**/api/post-drafts/**', async (route) => {
+    if (failOnce && route.request().method() === 'PUT') {
+      failOnce = false;
+      await route.abort();
+    } else await route.continue();
+  });
+  await title.fill('처음 저장한 제목');
+  await expect(autosave).toHaveText('초안을 저장하지 못했습니다.');
+  await expect(title).toHaveValue('처음 저장한 제목');
+  await page.getByRole('button', { name: '저장 재시도' }).click();
+  await expect(autosave).toHaveText(/초안 저장됨/);
+  const draftUrl = page.url();
+  const id = new URL(draftUrl).searchParams.get('draft');
+  expect(id).toMatch(/^[a-f0-9-]{36}$/);
+  expect((await request.put(`/api/post-drafts/${id}`, { headers, data: {} })).status()).toBe(401);
+  await page.reload();
+  await expect(title).toHaveValue('처음 저장한 제목');
+  await page.goto('/manage');
+  await page
+    .getByRole('region', { name: '미발행 초안' })
+    .getByRole('link', { name: '처음 저장한 제목' })
+    .click();
+  await expect(page).toHaveURL(draftUrl);
+  const slug = page.getByLabel('글 주소', { exact: true });
+  await slug.fill('postgresql-small-pool');
+  await page.getByLabel('원본 형식', { exact: true }).selectOption('MARKDOWN');
+  const source = page
+    .getByRole('textbox', { name: '본문 편집 원본', exact: true })
+    .filter({ visible: true });
+  await source.fill('## 작성\n\n```ts\nconst example = 42;\n```');
+  await expect(autosave).toHaveText(/초안 저장됨/);
+  await page.getByRole('button', { name: '발행', exact: true }).click();
+  await expect(
+    page.getByText('이미 사용 중인 이름 또는 주소입니다.', { exact: true }),
+  ).toBeVisible();
+  await page.reload();
+  await expect(title).toHaveValue('처음 저장한 제목');
+  await expect(slug).toHaveValue('postgresql-small-pool');
+  await slug.fill('autosave-public-test');
+  await expect(autosave).toHaveText(/초안 저장됨/);
+  expect(await request.get('/sitemap.xml').then((response) => response.text())).not.toContain(
+    'autosave-public-test',
+  );
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  if (process.env.CODELILY_EVIDENCE_DIR) {
+    await page.getByRole('heading', { name: '새 글 작성' }).scrollIntoViewIfNeeded();
+    await page.screenshot({
+      path: path.join(process.env.CODELILY_EVIDENCE_DIR, 'post-draft-mobile.png'),
+    });
+  }
+  await page.getByRole('button', { name: '발행', exact: true }).click();
+  await expect(page).toHaveURL(new RegExp(`/manage/posts/${id}$`));
+  const editUrl = page.url();
+  const other = await context.newPage();
+  try {
+    await other.goto(editUrl);
+    await expect(other.getByLabel('제목', { exact: true })).toHaveValue('처음 저장한 제목');
+    await title.fill('먼저 저장한 수정 초안');
+    await expect(autosave).toHaveText(/초안 저장됨/);
+    await other.getByLabel('제목', { exact: true }).fill('다른 탭의 편집');
+    await expect(other.getByRole('status').filter({ hasText: '다른 탭' })).toBeVisible();
+    await expect(other.getByLabel('제목', { exact: true })).toHaveValue('다른 탭의 편집');
+    await expect(other.getByRole('button', { name: '수정본 발행' })).toBeDisabled();
+    const before = (await (await request.get('/api/posts/autosave-public-test')).json()).data;
+    expect(before.title).toBe('처음 저장한 제목');
+    await page.reload();
+    await expect(title).toHaveValue('먼저 저장한 수정 초안');
+    await page.getByRole('button', { name: '수정본 발행', exact: true }).click();
+    await expect(page.getByText('글을 발행했습니다.')).toBeVisible();
+    await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+    await page.setViewportSize({ width: 1440, height: 1100 });
+    await page.goto('/posts/autosave-public-test');
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('먼저 저장한 수정 초안');
+    const copy = page.getByRole('button', { name: '1번째 코드 블록 복사' });
+    await copy.focus();
+    await page.keyboard.press('Enter');
+    await expect(copy).toHaveText('복사됨');
+    const copied = await page.evaluate(() => navigator.clipboard.readText());
+    expect(copied.replace(/\r\n/g, '\n')).toBe('const example = 42;\n');
+    expect(errors).toEqual([]);
+  } finally {
+    await other.close();
+    await context.request.delete(`/api/posts/${id}`, { headers });
+  }
+});
+
 test('발행 화면 미리보기는 저장 전 내용과 목차를 렌더링하고 편집 권한을 확인한다', async ({
   page,
   browser,
@@ -135,7 +236,10 @@ test('시리즈는 공개 글만 순서대로 연결하고 사이트맵에서 �
   await authenticate(context, 'owner');
   const headers = { origin: 'http://localhost:3000' };
   await page.goto('/manage');
-  await page.getByRole('link', { name: '시리즈', exact: true }).click();
+  await page
+    .getByRole('navigation', { name: '관리 메뉴' })
+    .getByRole('link', { name: '시리즈', exact: true })
+    .click();
   await expect(page).toHaveURL(/\/manage\/series$/);
   await page.getByLabel('시리즈 이름').fill('운영기');
   const created = page.waitForResponse((response) => response.url().endsWith('/api/post-series'));
@@ -163,11 +267,11 @@ test('시리즈는 공개 글만 순서대로 연결하고 사이트맵에서 �
       .fill(post.source);
     await page.getByLabel('시리즈', { exact: true }).selectOption({ label: series.name });
     await page.getByLabel('시리즈 순서').fill('1');
-    await page.getByLabel('공개 상태').selectOption(post.status);
     const firstSaved = page.waitForResponse(
-      (response) => response.url().endsWith('/api/posts') && response.request().method() === 'POST',
+      (response) =>
+        response.url().includes('/api/post-drafts/') && response.request().method() === 'POST',
     );
-    await page.getByRole('button', { name: '저장', exact: true }).click();
+    await page.getByRole('button', { name: '발행', exact: true }).click();
     const first = await firstSaved;
     expect(first.ok()).toBe(true);
     ids.push((await first.json()).data.id);
@@ -194,6 +298,18 @@ test('시리즈는 공개 글만 순서대로 연결하고 사이트맵에서 �
       data: { ...middle, slug: 'series-conflict' },
     });
     expect(collision.status()).toBe(409);
+    await page.goto('/series');
+    await expect(page.getByRole('heading', { name: '시리즈', exact: true })).toBeVisible();
+    await expect(page.getByText('공개 글 2편')).toBeVisible();
+    if (process.env.CODELILY_EVIDENCE_DIR)
+      await page.screenshot({
+        path: path.join(process.env.CODELILY_EVIDENCE_DIR, 'series-index.png'),
+      });
+    await page.getByRole('link', { name: '운영기', exact: true }).click();
+    await expect(page).toHaveURL(new RegExp(`/series/${series.id}$`));
+    await expect(
+      page.getByRole('list', { name: '시리즈 글 목록' }).getByRole('listitem'),
+    ).toHaveText(['1편 · 배포 준비', '3편 · 운영 점검']);
     const editor = await browser.newContext();
     try {
       await authenticate(editor, 'editor');
@@ -400,9 +516,8 @@ test('OWNER: category → Markdown Post → publish → member comment → About
     .withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa'])
     .analyze();
   expect(editorAudit.violations).toEqual([]);
-  await page.getByLabel('공개 상태', { exact: true }).selectOption('PUBLISHED');
-  await page.getByRole('button', { name: '저장', exact: true }).click();
-  await expect(page.getByText('글을 저장했습니다.')).toBeVisible();
+  await page.getByRole('button', { name: '발행', exact: true }).click();
+  await expect(page.getByText('글을 발행했습니다.')).toBeVisible();
   await expect(page).toHaveURL(/\/manage\/posts\/[a-f0-9-]{36}$/);
   const manageUrl = page.url();
   await page.goto('/posts/e2e-markdown-post');
@@ -462,9 +577,9 @@ test('OWNER: category → Markdown Post → publish → member comment → About
       fullPage: true,
     });
   await page.goto(manageUrl);
-  await page.getByLabel('공개 상태', { exact: true }).selectOption('DRAFT');
-  await page.getByRole('button', { name: '저장', exact: true }).click();
-  await expect(page.getByText('글을 저장했습니다.')).toBeVisible();
+  page.once('dialog', (dialog) => void dialog.accept());
+  await page.getByRole('button', { name: '공개 해제', exact: true }).click();
+  await expect(page.getByRole('button', { name: '발행', exact: true })).toBeVisible();
   await page.goto('/posts/e2e-markdown-post');
   await expect(page.getByRole('heading', { name: '페이지를 찾을 수 없습니다.' })).toBeVisible();
   const origin = { origin: 'http://localhost:3000' };
@@ -506,8 +621,8 @@ test('HTML source editing saves current code view and preserves safe styles', as
   await code.fill(
     '<h2>HTML 스타일 확인</h2><p style="text-align:center;font-weight:bold">서식 본문</p><script>alert(1)</script>',
   );
-  await page.getByRole('button', { name: '저장', exact: true }).click();
-  await expect(page.getByText('글을 저장했습니다.')).toBeVisible();
+  await page.getByRole('button', { name: '수정본 발행', exact: true }).click();
+  await expect(page.getByText('글을 발행했습니다.')).toBeVisible();
   await page.goto('/posts/shared-component-boundaries');
   await expect(page.getByRole('heading', { name: 'HTML 스타일 확인', exact: true })).toBeVisible();
   await expect(page.locator('.content-body p').filter({ hasText: '서식 본문' })).toHaveCSS(

@@ -62,6 +62,7 @@ export default async function PostDetail({ params }: Props) {
         <ArrowLeft size={17} aria-hidden="true" /> 모든 글
       </Link>
       <PostArticle
+        key={`${post.id}:${post.editVersion}`}
         details={{ ...post, date: post.publishedAt || post.createdAt }}
         content={post.bodyRemoved ? null : prepareArticleContent(post.renderedHtml)}
       />

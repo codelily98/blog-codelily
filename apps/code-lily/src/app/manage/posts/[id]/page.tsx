@@ -9,15 +9,20 @@ export default async function EditPost({ params }: { params: Promise<{ id: strin
   const postWithSeries = managementAccess(async () => {
     const post = await posts.editablePost(id, actor);
     if (post.bodyRemoved) redirect('/manage?view=withdrawn');
-    const seriesOptions = await posts.editableSeriesOptions(actor, post);
-    return { post, seriesOptions };
+    const [seriesOptions, draft] = await Promise.all([
+      posts.editableSeriesOptions(actor, post),
+      posts.findEditableDraft(post.id, actor),
+    ]);
+    return { post, seriesOptions, draft };
   });
-  const [{ post, seriesOptions }, categories] = await Promise.all([
+  const [{ post, seriesOptions, draft }, categories] = await Promise.all([
     postWithSeries,
     posts.categories(),
   ]);
   return (
     <PostEditor
+      key={`${post.id}:${post.editVersion}`}
+      draft={draft ?? undefined}
       post={post}
       seriesOptions={seriesOptions}
       categories={categories.filter(

@@ -154,6 +154,9 @@
 .publication-reader .content-body [id] {
   scroll-margin-top: 1.25rem;
 }
+.publication-reader .content-body pre.with-copy-control {
+  margin-top: 0.5rem;
+}
 .tabulator {
   border: 1px solid var(--cl-line) !important;
   background: var(--cl-base) !important;

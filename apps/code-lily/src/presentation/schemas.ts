@@ -32,6 +32,28 @@ export const postPreviewSchema = postSchema
     categoryId: true,
   })
   .extend({ title: text(160), source: z.string().max(500000) });
+export const postVersionSchema = z.number().int().min(1).max(2147483647);
+export const draftWriteSchema = z.strictObject({
+  postId: z.uuid().nullable(),
+  baseVersion: postVersionSchema.nullable(),
+  version: z.uuid().nullable(),
+  fields: z.strictObject({
+    title: z.string().max(160),
+    slug: z.string().max(100),
+    excerpt: z.string().max(300),
+    source: z.string().max(500000),
+    format: postSchema.shape.format,
+    categoryId: z.uuid().nullable(),
+    tagsText: z.string().max(320),
+    seriesId: z.uuid().nullable(),
+    seriesPosition: z.string().max(16),
+  }),
+});
+export const draftApplySchema = z.strictObject({
+  version: z.uuid(),
+  postVersion: postVersionSchema.nullable(),
+  confirmBase: z.boolean().default(false),
+});
 export const postSeriesSchema = z.object({
   id: z.uuid().optional(),
   name: text(80).min(1, '시리즈 이름을 입력해주세요.'),

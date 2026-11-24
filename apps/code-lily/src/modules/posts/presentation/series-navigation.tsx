@@ -2,10 +2,12 @@ import Link from 'next/link';
 import type { SeriesEntry } from '../domain/models';
 
 export function SeriesNavigation({
+  id,
   name,
   entries,
   index,
 }: {
+  id: string;
   name: string;
   entries: SeriesEntry[];
   index: number;
@@ -20,6 +22,9 @@ export function SeriesNavigation({
       <h2 id="post-series-heading" className="break-words text-lg font-bold">
         시리즈 · {name}
       </h2>
+      <Link href={`/series/${id}`} className="publication-link text-sm">
+        시리즈 페이지
+      </Link>
       <ol className="mt-3 space-y-1" aria-label="시리즈 글 목록">
         {entries.map((entry, entryIndex) => (
           <li key={entry.slug} className="break-words">

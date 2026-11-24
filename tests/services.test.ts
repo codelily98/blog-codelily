@@ -18,6 +18,7 @@ test('real PostgreSQL SQL: content, ownership, comments, About and telemetry', a
     await readFile('apps/code-lily/migrations/004_withdrawn_post_visibility.sql', 'utf8'),
   );
   await engine.exec(await readFile('apps/code-lily/migrations/007_post_series.sql', 'utf8'));
+  await engine.exec(await readFile('apps/code-lily/migrations/008_post_drafts.sql', 'utf8'));
   const db = new EmbeddedPool(engine);
   const owner: Actor = { id: 'owner', name: 'Owner', email: 'owner@local.invalid', role: 'OWNER' };
   const editor: Actor = {
