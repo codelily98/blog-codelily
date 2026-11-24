@@ -8,7 +8,7 @@
 - `PUT /api/post-drafts/[id]`는 초안 버전을 비교해 저장한다. `POST`는 초안 버전과 기존 글 버전을 확인한 뒤 게시글 변경과 초안 소모를 한 트랜잭션에서 처리한다. `PATCH`는 공개 해제, `DELETE`는 버전을 확인한 뒤 초안 삭제를 처리한다. 편집 권한 및 소유권은 서버에서 확인하며 비공개 응답은 `private, no-store`를 반환한다. 신규 및 수정 초안은 공개 글·검색·RSS·사이트맵에 포함되지 않는다.
 - `/series`와 시리즈 상세에서 본문이 남아 있는 공개 글만 찾아 읽을 수 있다. 공개 상세의 코드 블록은 브라우저 클립보드로 복사하며 결과를 보조기기에 알린다. [접근성 품질인증 심사 기준](https://www.webwatch.or.kr/contents/view/3)
 - Node.js 24.22.3에서 타입·경계·프로덕션 빌드, 단위·SQL 테스트 27개, 격리 PostgreSQL 16.15의 Chrome E2E 15개를 통과했다. 기존 글의 migration 전후 해시와 runtime·maintenance 권한, 자동 저장·재시도·재열기·다중 탭 충돌·중복 주소의 발행 실패 후 초안 보존을 확인했다.
-- 운영 PostgreSQL 16.15에서 `008_post_drafts.sql`과 권한 SQL을 적용한 뒤 21:46:40 KST에 새 앱·도구 이미지를 활성화했다. 초안 테이블 권한·삭제 제약과 게시글 버전 트리거를 확인했다. 운영 시리즈·사이트맵·readiness는 200이고 익명 초안 쓰기는 401이다. 실제 운영 계정의 초안 저장과 첫 글 발행은 다음 인수다. [활성 릴리스 명세](../../infra/releases/2026-11-24-drafts-active.json)
+- 운영 PostgreSQL 16.15에서 `008_post_drafts.sql`과 권한 SQL을 적용한 뒤 21:46:40 KST에 새 앱·도구 이미지를 활성화했다. 초안 테이블 권한·삭제 제약과 게시글 버전 트리거를 확인했다. 운영 시리즈·사이트맵·readiness는 200이고 익명 초안 쓰기는 401이다. 기존 운영 OWNER 세션으로 자동 저장·새로고침 복구·목록에서 다시 열기·발행 화면 미리보기를 확인했다. 승인된 첫 글 발행은 다음 인수다. [활성 릴리스 명세](../../infra/releases/2026-11-24-drafts-active.json) · [초안 재인수 기록](../진행현황.md#2026-11-24-운영-owner-초안-재인수)
 
 ## 2026-11-24 다음 기능 검토
 
@@ -108,7 +108,7 @@
 
 ## 다음 시작점
 
-현재 운영 기준은 `drafts-3f5fcbe6391e`와 스키마 008이다. 실제 OWNER 세션에서 초안 자동 저장·재열기·미리보기를 확인한 뒤 운영자가 승인한 첫 글을 발행해 상세·RSS·사이트맵을 대조한다. 일반 가입 공개에 필요한 정책·약관, Google 게시와 역할별 인수는 운영 준비 문서에 따른다. [활성 릴리스 명세](../../infra/releases/2026-11-24-drafts-active.json) · [Google OAuth 및 편집 인수](../operations/Google-OAuth-인수.md) · [일반 공개 준비](../operations/Google-OAuth-공개준비.md)
+현재 운영 기준은 `drafts-3f5fcbe6391e`와 스키마 008이다. 운영 OWNER 세션의 비공개 초안 검증을 완료했다. 운영자가 승인한 첫 글을 발행해 상세·RSS·사이트맵을 대조하는 인수가 남아 있다. 일반 가입 공개에 필요한 정책·약관, Google 게시와 역할별 인수는 운영 준비 문서에 따른다. [활성 릴리스 명세](../../infra/releases/2026-11-24-drafts-active.json) · [Google OAuth 및 편집 인수](../operations/Google-OAuth-인수.md) · [일반 공개 준비](../operations/Google-OAuth-공개준비.md)
 
 ### 이전 운영 인수 기록
 

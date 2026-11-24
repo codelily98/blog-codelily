@@ -92,6 +92,8 @@ sudo docker compose --env-file infra/.env -f infra/compose.production.yml exec -
 - 발행 화면 미리보기와 익명 접근 제한을 확인한다. 운영 사이트맵과 RSS에는 현재 공개 글만 표시되어야 한다. 합성 데이터 식별자는 Git 밖에 보관한다.
 - 공개 발행 검증은 운영자가 승인한 원고와 주소로 진행한다. 공개 상세·시리즈·RSS·사이트맵 반영과 수정 초안 저장 중 공개본 유지 여부를 대조한다. [현재 운영 릴리스](../../infra/releases/2026-11-24-drafts-active.json)
 
+2026-11-24 기존 운영 OWNER 세션에서 자동 저장·새로고침·미발행 초안 재열기·목차 미리보기를 확인했다. 합성 초안을 비공개로 유지했으며 익명 상세·검색·RSS·사이트맵에서 초안이 제외됐다. 승인된 첫 글의 발행 인수는 대기다. [운영 재인수 결과](../진행현황.md#2026-11-24-운영-owner-초안-재인수)
+
 ## 2026-11-04 실제 검증 근거와 한계
 
 - 사용자가 서버 앱 재생성 Healthy/readiness 200 출력을 제공했고, 공개 readiness/Posts/naraebi 200과 `/api/me` 설정 true·private/no-store·CF DYNAMIC을 직접 확인했다.
