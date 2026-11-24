@@ -58,6 +58,7 @@ test('withdrawal protects related data, detaches retained content and replays af
     await db.exec(
       await readFile('apps/code-lily/migrations/004_withdrawn_post_visibility.sql', 'utf8'),
     );
+    await db.exec(await readFile('apps/code-lily/migrations/007_post_series.sql', 'utf8'));
     assert.deepEqual((await db.query('SELECT DISTINCT body_removed FROM posts')).rows, [
       { body_removed: false },
     ]);

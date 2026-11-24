@@ -27,7 +27,26 @@ export interface Post extends PostSummary {
   source: string;
   format: ContentFormat;
   renderedHtml: string;
+  series: PostSeriesPlacement | null;
 }
+export interface PostSeriesPlacement {
+  id: string;
+  position: number;
+}
+export interface PostSeries {
+  id: string;
+  name: string;
+  ownerId: string | null;
+}
+export type SeriesEntry = Pick<PostSummary, 'slug' | 'title'> & { position: number };
+export type PostReaderDetails = Pick<
+  PostSummary,
+  'title' | 'excerpt' | 'tags' | 'categoryName' | 'authorName' | 'readMinutes' | 'bodyRemoved'
+> & { date: string };
+export type PostPreviewInput = Pick<
+  PostInput,
+  'id' | 'title' | 'excerpt' | 'source' | 'format' | 'tags' | 'categoryId'
+>;
 export interface PostInput {
   id?: string;
   slug: string;
@@ -38,6 +57,7 @@ export interface PostInput {
   tags: string[];
   status: 'DRAFT' | 'PUBLISHED';
   categoryId: string | null;
+  series?: PostSeriesPlacement | null;
 }
 export interface Comment {
   id: string;
@@ -66,6 +86,12 @@ export interface PostRepository {
     offset?: number;
   }): Promise<PostSummary[]>;
   publishedCount(): Promise<number>;
+  sitemapEntries(): Promise<Pick<PostSummary, 'slug' | 'updatedAt'>[]>;
+  listSeries(ownerId?: string | null): Promise<PostSeries[]>;
+  findSeries(id: string): Promise<PostSeries | null>;
+  saveSeries(input: { id?: string; name: string }, actorId: string): Promise<PostSeries>;
+  deleteSeries(id: string, actorId: string): Promise<void>;
+  publishedSeriesEntries(id: string): Promise<SeriesEntry[]>;
   findById(id: string): Promise<Post | null>;
   findBySlug(slug: string): Promise<Post | null>;
   save(input: PostInput & { renderedHtml: string }, actorId: string): Promise<Post>;

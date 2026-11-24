@@ -25,6 +25,12 @@ export default async function ManageLayout({ children }: { children: React.React
           >
             카테고리
           </Link>
+          <Link
+            href="/manage/series"
+            className="flex min-h-11 items-center rounded-lg border border-line px-4 text-sm"
+          >
+            시리즈
+          </Link>
           {actor.role === 'OWNER' ? (
             <>
               <Link

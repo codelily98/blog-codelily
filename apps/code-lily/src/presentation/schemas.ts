@@ -16,6 +16,25 @@ export const postSchema = z.object({
   tags: z.array(text(30).min(1)).max(10).default([]),
   status: z.enum(['DRAFT', 'PUBLISHED']),
   categoryId: z.uuid().nullable(),
+  series: z
+    .object({ id: z.uuid(), position: z.number().int().min(1).max(100) })
+    .nullable()
+    .optional(),
+});
+export const postPreviewSchema = postSchema
+  .pick({
+    id: true,
+    title: true,
+    excerpt: true,
+    source: true,
+    format: true,
+    tags: true,
+    categoryId: true,
+  })
+  .extend({ title: text(160), source: z.string().max(500000) });
+export const postSeriesSchema = z.object({
+  id: z.uuid().optional(),
+  name: text(80).min(1, '시리즈 이름을 입력해주세요.'),
 });
 export const categorySchema = z.object({
   id: z.uuid().optional(),

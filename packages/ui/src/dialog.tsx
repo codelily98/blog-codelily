@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useId, useRef, type ReactNode } from 'react';
+import { useEffect, useId, useRef, type ReactNode, type RefObject } from 'react';
 import { X } from 'lucide-react';
 import { Button } from './primitives';
 export function Dialog({
@@ -8,12 +8,16 @@ export function Dialog({
   title,
   children,
   initialFocus,
+  wide = false,
+  returnFocusRef,
 }: {
   open: boolean;
   onClose: () => void;
   title: string;
   children: ReactNode;
   initialFocus?: string;
+  wide?: boolean;
+  returnFocusRef?: RefObject<HTMLElement | null>;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   const titleId = useId();
@@ -21,17 +25,15 @@ export function Dialog({
   callback.current = onClose;
   useEffect(() => {
     const dialog = ref.current;
-    if (!dialog) return;
-    const previous = document.activeElement as HTMLElement | null;
-    if (open && !dialog.open) {
-      dialog.showModal();
-      if (initialFocus) dialog.querySelector<HTMLElement>(initialFocus)?.focus();
-    } else if (!open && dialog.open) dialog.close();
+    if (!dialog || !open) return;
+    const previous = returnFocusRef?.current ?? (document.activeElement as HTMLElement | null);
+    dialog.showModal();
+    if (initialFocus) dialog.querySelector<HTMLElement>(initialFocus)?.focus();
     return () => {
-      if (dialog.open) dialog.close();
-      previous?.focus();
+      dialog.close();
+      previous?.focus({ preventScroll: true });
     };
-  }, [open, initialFocus]);
+  }, [open, initialFocus, returnFocusRef]);
   return (
     <dialog
       ref={ref}
@@ -43,9 +45,11 @@ export function Dialog({
       onClick={(event) => {
         if (event.target === ref.current) callback.current();
       }}
-      className="m-auto max-h-[85dvh] w-[calc(100%-2rem)] max-w-xl overflow-y-auto rounded-2xl border border-line bg-base p-0 text-ink shadow-2xl backdrop:bg-black/60"
+      className={`m-auto max-h-[85dvh] overflow-y-auto rounded-2xl border border-line bg-base p-0 text-ink shadow-2xl backdrop:bg-black/60 ${wide ? 'w-full max-w-4xl scroll-pt-20 sm:w-[calc(100%-2rem)]' : 'w-[calc(100%-2rem)] max-w-xl'}`}
     >
-      <div className="flex items-center justify-between border-b border-line px-6 py-4">
+      <div
+        className={`flex items-center justify-between border-b border-line px-6 py-4 ${wide ? 'sticky top-0 z-10 bg-base' : ''}`}
+      >
         <h2 id={titleId} className="text-lg font-bold">
           {title}
         </h2>
@@ -53,7 +57,7 @@ export function Dialog({
           <X size={18} />
         </Button>
       </div>
-      <div className="p-6">{children}</div>
+      <div className={wide ? 'pb-6' : 'p-6'}>{children}</div>
     </dialog>
   );
 }

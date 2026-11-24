@@ -1,23 +1,25 @@
 import { redirect } from 'next/navigation';
 import { services } from '@/composition';
 import { managementAccess, managementActor } from '@/presentation/manage-actor';
-import { owned } from '@/modules/identity/domain/policy';
 import { PostEditor } from '@/modules/posts/presentation/post-editor';
 export default async function EditPost({ params }: { params: Promise<{ id: string }> }) {
   const actor = await managementActor();
   const { posts } = await services();
-  const [post, categories] = await Promise.all([
-    managementAccess(async () => {
-      const post = await posts.readById((await params).id, actor);
-      owned(actor, post.authorId);
-      return post;
-    }),
+  const { id } = await params;
+  const postWithSeries = managementAccess(async () => {
+    const post = await posts.editablePost(id, actor);
+    if (post.bodyRemoved) redirect('/manage?view=withdrawn');
+    const seriesOptions = await posts.editableSeriesOptions(actor, post);
+    return { post, seriesOptions };
+  });
+  const [{ post, seriesOptions }, categories] = await Promise.all([
+    postWithSeries,
     posts.categories(),
   ]);
-  if (post.bodyRemoved) redirect('/manage?view=withdrawn');
   return (
     <PostEditor
       post={post}
+      seriesOptions={seriesOptions}
       categories={categories.filter(
         (category) => actor.role === 'OWNER' || category.ownerId === actor.id,
       )}

@@ -15,6 +15,281 @@ async function authenticate(context: BrowserContext, role: string) {
     },
   ]);
 }
+
+test('발행 화면 미리보기는 저장 전 내용과 목차를 렌더링하고 편집 권한을 확인한다', async ({
+  page,
+  browser,
+  context,
+  request,
+}) => {
+  test.skip(process.env.CODELILY_AUTH_FIXTURE !== '1', 'Requires isolated fixture sessions.');
+  const errors: string[] = [];
+  page.on('pageerror', (error) => errors.push(error.message));
+  page.on('console', (message) => {
+    if (message.type() === 'error' || message.type() === 'warning') errors.push(message.text());
+  });
+  await authenticate(context, 'editor');
+  const headers = { origin: 'http://localhost:3000' };
+  const input = {
+    title: '미리보기 전용 글',
+    slug: 'preview-fixture',
+    excerpt: '공개 상세와 같은 요약',
+    source:
+      '## 준비\n\n본문입니다.\n\n### 실행\n\n```ts\nconst demo = true;\n```\n\n![이미지 대체 텍스트](/favicon.ico)',
+    format: 'MARKDOWN',
+    tags: ['공개준비'],
+    status: 'DRAFT',
+    categoryId: null,
+  };
+  const saved = await context.request.post('/api/posts', { headers, data: input });
+  expect(saved.ok()).toBe(true);
+  const { id } = (await saved.json()).data;
+  try {
+    const previewRoute = '/api/content/post-preview';
+    const data = { ...input, id };
+    expect((await request.post(previewRoute, { headers, data })).status()).toBe(401);
+    for (const [role, status] of [
+      ['member', 403],
+      ['owner', 200],
+    ] as const) {
+      const other = await browser.newContext();
+      try {
+        await authenticate(other, role);
+        expect((await other.request.post(previewRoute, { headers, data })).status()).toBe(status);
+      } finally {
+        await other.close();
+      }
+    }
+    for (const width of [1440, 390]) {
+      await page.setViewportSize({ width, height: width === 390 ? 844 : 1100 });
+      await page.goto(`/manage/posts/${id}`);
+      if (width === 390) await page.getByRole('button', { name: '라이트 테마로 변경' }).click();
+      await page.getByRole('textbox', { name: '제목', exact: true }).fill('저장하지 않은 제목');
+      const button = page.getByRole('button', { name: '발행 화면 미리보기' });
+      const received = page.waitForResponse((response) => response.url().endsWith(previewRoute));
+      await button.focus();
+      await page.keyboard.press('Enter');
+      expect((await received).headers()['cache-control']).toContain('private, no-store');
+      const dialog = page.getByRole('dialog', { name: '발행 화면 미리보기' });
+      await expect(dialog.getByRole('heading', { name: '저장하지 않은 제목' })).toBeVisible();
+      await expect(dialog.getByText(input.excerpt)).toBeVisible();
+      await expect(dialog.getByText('#공개준비')).toBeVisible();
+      await expect(dialog.locator('.content-body')).toHaveCSS(
+        'background-color',
+        'rgba(0, 0, 0, 0)',
+      );
+      await expect(dialog.getByText('본문입니다.')).toHaveCSS(
+        'color',
+        width === 390 ? 'rgb(25, 36, 27)' : 'rgb(244, 243, 233)',
+      );
+      await expect(dialog.locator('pre code')).toHaveText(/const demo = true/);
+      await expect
+        .poll(() =>
+          dialog
+            .getByRole('img', { name: '이미지 대체 텍스트' })
+            .evaluate((image: HTMLImageElement) => image.naturalWidth),
+        )
+        .toBeGreaterThan(0);
+      const toc = dialog.getByRole('navigation', { name: '본문 목차' });
+      await expect(toc.getByRole('link')).toHaveCount(2);
+      expect(await dialog.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(
+        true,
+      );
+      const audit = await new AxeBuilder({ page })
+        .include('dialog[open]')
+        .withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa'])
+        .analyze();
+      expect(audit.violations).toEqual([]);
+      if (process.env.CODELILY_EVIDENCE_DIR)
+        await page.screenshot({
+          path: path.join(process.env.CODELILY_EVIDENCE_DIR, `post-preview-${width}.png`),
+        });
+      await toc.getByRole('link', { name: '실행' }).focus();
+      await page.keyboard.press('Enter');
+      await expect(dialog.getByRole('heading', { name: '실행' })).toBeFocused();
+      await expect(page).toHaveURL(new RegExp(`/manage/posts/${id}$`));
+      await page.keyboard.press('Escape');
+      await expect(dialog).toBeHidden();
+      await expect(button).toBeFocused();
+    }
+    const persisted = await context.request.get(`/api/posts/${id}`);
+    expect((await persisted.json()).data.title).toBe(input.title);
+    expect(errors).toEqual([]);
+  } finally {
+    await context.request.delete(`/api/posts/${id}`, { headers });
+  }
+});
+
+test('시리즈는 공개 글만 순서대로 연결하고 사이트맵에서 비공개 전환을 반영한다', async ({
+  page,
+  browser,
+  context,
+  request,
+}) => {
+  test.skip(process.env.CODELILY_AUTH_FIXTURE !== '1', 'Requires isolated fixture sessions.');
+  const errors: string[] = [];
+  page.on('pageerror', (error) => errors.push(error.message));
+  page.on('console', (message) => {
+    if (message.type() === 'error' || message.type() === 'warning') errors.push(message.text());
+  });
+  await authenticate(context, 'owner');
+  const headers = { origin: 'http://localhost:3000' };
+  await page.goto('/manage');
+  await page.getByRole('link', { name: '시리즈', exact: true }).click();
+  await expect(page).toHaveURL(/\/manage\/series$/);
+  await page.getByLabel('시리즈 이름').fill('운영기');
+  const created = page.waitForResponse((response) => response.url().endsWith('/api/post-series'));
+  await page.getByRole('button', { name: '저장', exact: true }).click();
+  const series = (await (await created).json()).data;
+  await expect(page.getByText('운영기', { exact: true })).toBeVisible();
+  const ids: string[] = [];
+  const post = {
+    title: '배포 준비',
+    slug: 'series-prepare',
+    excerpt: '',
+    source: '## 설정\n\n배포 준비 글입니다.',
+    format: 'MARKDOWN',
+    status: 'PUBLISHED',
+    categoryId: null,
+  };
+  try {
+    await page.goto('/manage/posts/new');
+    await page.getByLabel('제목', { exact: true }).fill(post.title);
+    await page.getByLabel('글 주소', { exact: true }).fill(post.slug);
+    await page.getByLabel('원본 형식', { exact: true }).selectOption(post.format);
+    await page
+      .getByRole('textbox', { name: '본문 편집 원본', exact: true })
+      .filter({ visible: true })
+      .fill(post.source);
+    await page.getByLabel('시리즈', { exact: true }).selectOption({ label: series.name });
+    await page.getByLabel('시리즈 순서').fill('1');
+    await page.getByLabel('공개 상태').selectOption(post.status);
+    const firstSaved = page.waitForResponse(
+      (response) => response.url().endsWith('/api/posts') && response.request().method() === 'POST',
+    );
+    await page.getByRole('button', { name: '저장', exact: true }).click();
+    const first = await firstSaved;
+    expect(first.ok()).toBe(true);
+    ids.push((await first.json()).data.id);
+    const last = {
+      ...post,
+      title: '운영 점검',
+      slug: 'series-review',
+      series: { id: series.id, position: 3 },
+    };
+    const middle = {
+      ...post,
+      title: '초안 검증',
+      slug: 'series-hidden',
+      status: 'DRAFT',
+      series: { id: series.id, position: 2 },
+    };
+    for (const data of [last, middle]) {
+      const saved = await context.request.post('/api/posts', { headers, data });
+      expect(saved.ok()).toBe(true);
+      ids.push((await saved.json()).data.id);
+    }
+    const collision = await context.request.post('/api/posts', {
+      headers,
+      data: { ...middle, slug: 'series-conflict' },
+    });
+    expect(collision.status()).toBe(409);
+    const editor = await browser.newContext();
+    try {
+      await authenticate(editor, 'editor');
+      expect(
+        (
+          await editor.request.post('/api/posts', {
+            headers,
+            data: { ...last, slug: 'series-forbidden' },
+          })
+        ).status(),
+      ).toBe(403);
+      expect(
+        (
+          await editor.request.post('/api/content/post-preview', {
+            headers,
+            data: { ...post, id: ids[0] },
+          })
+        ).status(),
+      ).toBe(403);
+      expect(
+        (
+          await editor.request.post('/api/post-series', {
+            headers,
+            data: { id: series.id, name: '다른 작성자 시리즈' },
+          })
+        ).status(),
+      ).toBe(403);
+    } finally {
+      await editor.close();
+    }
+    const edited = await context.request.put(`/api/posts/${ids[0]}`, { headers, data: post });
+    expect((await edited.json()).data.series).toEqual({ id: series.id, position: 1 });
+    for (const width of [1440, 390]) {
+      await page.setViewportSize({ width, height: width === 390 ? 844 : 1100 });
+      await page.goto(`/posts/${post.slug}`);
+      await expect(page.getByRole('heading', { level: 1 })).toHaveText(post.title);
+      const navigation = page.getByRole('navigation', { name: '시리즈 · 운영기' });
+      await expect(navigation.getByRole('listitem')).toHaveText([
+        '1편 · 배포 준비',
+        '3편 · 운영 점검',
+      ]);
+      await expect(navigation.locator('[aria-current=page]')).toHaveText('1편 · 배포 준비');
+      const audit = await new AxeBuilder({ page })
+        .include('nav[aria-labelledby="post-series-heading"]')
+        .withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa'])
+        .analyze();
+      expect(audit.violations).toEqual([]);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+        true,
+      );
+      if (process.env.CODELILY_EVIDENCE_DIR)
+        await navigation.screenshot({
+          path: path.join(process.env.CODELILY_EVIDENCE_DIR, `post-series-${width}.png`),
+        });
+      const next = navigation.getByRole('link', { name: '다음 편 · 운영 점검' });
+      await next.focus();
+      await page.keyboard.press('Enter');
+      await expect(page).toHaveURL(new RegExp(`/posts/${last.slug}$`));
+      await expect(navigation.getByRole('link', { name: '이전 편 · 배포 준비' })).toBeVisible();
+    }
+    const sitemapRoute = '/sitemap.xml';
+    const sitemap = await request.get(sitemapRoute);
+    expect(sitemap.headers()['content-type']).toContain('application/xml');
+    expect(sitemap.headers()['cache-control']).toContain('must-revalidate');
+    const xml = await sitemap.text();
+    expect(xml).toContain(`<loc>http://localhost:3000/posts/${last.slug}</loc>`);
+    expect(xml).not.toContain(middle.slug);
+    expect(xml).not.toContain('/manage');
+    expect(await (await request.get('/robots.txt')).text()).toContain(
+      'Sitemap: http://localhost:3000/sitemap.xml',
+    );
+    expect(
+      (
+        await context.request.put(`/api/posts/${ids[1]}`, {
+          headers,
+          data: { ...last, status: 'DRAFT' },
+        })
+      ).ok(),
+    ).toBe(true);
+    expect(await (await request.get(sitemapRoute)).text()).not.toContain(last.slug);
+    await page.goto(`/posts/${post.slug}`);
+    await expect(
+      page.getByRole('navigation', { name: '시리즈 · 운영기' }).getByRole('listitem'),
+    ).toHaveCount(1);
+    const inUse = await context.request.delete('/api/post-series', {
+      headers,
+      data: { id: series.id },
+    });
+    expect(inUse.status()).toBe(409);
+    expect(errors).toEqual([]);
+  } finally {
+    for (const id of ids) await context.request.delete(`/api/posts/${id}`, { headers });
+    await context.request.delete('/api/post-series', { headers, data: { id: series.id } });
+  }
+});
+
 test('management pages explain denied access without exposing another author’s post', async ({
   browser,
   context,

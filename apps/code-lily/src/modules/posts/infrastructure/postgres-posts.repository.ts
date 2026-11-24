@@ -8,6 +8,8 @@ import type {
   Category,
   Comment,
   PostInput,
+  PostSeries,
+  SeriesEntry,
 } from '../domain/models';
 
 const commonColumns = `p.id,p.slug,p.title,p.excerpt,p.tags,p.status,p.body_removed AS "bodyRemoved",GREATEST(1,ceil(length(p.source)::numeric/700))::int AS "readMinutes",
@@ -15,8 +17,10 @@ const commonColumns = `p.id,p.slug,p.title,p.excerpt,p.tags,p.status,p.body_remo
   p.created_at AS "createdAt",p.updated_at AS "updatedAt",p.published_at AS "publishedAt"`;
 const postJoins =
   'FROM posts p LEFT JOIN "user" u ON u.id=p.author_id LEFT JOIN categories c ON c.id=p.category_id';
-const postSelect = `SELECT ${commonColumns},p.source,p.format,p.rendered_html AS "renderedHtml" ${postJoins}`;
+const postSelect = `SELECT ${commonColumns},p.source,p.format,p.rendered_html AS "renderedHtml",
+  CASE WHEN p.series_id IS NOT NULL THEN json_build_object('id',p.series_id,'position',p.series_position) END AS series ${postJoins}`;
 const postListSelect = `SELECT ${commonColumns} ${postJoins}`;
+const seriesColumns = 'id,name,owner_id AS "ownerId"';
 const categorySelect = `SELECT c.id,c.name,c.slug,c.owner_id AS "ownerId",count(p.id)::int AS count FROM categories c
   LEFT JOIN posts p ON p.category_id=c.id AND p.status='PUBLISHED'`;
 const commentSelect = `SELECT c.id,c.post_id AS "postId",c.author_id AS "authorId",coalesce(u.name,'탈퇴한 회원') AS "authorName",c.body,c.created_at AS "createdAt"
@@ -38,6 +42,75 @@ export class PostgresPostsRepository implements PostRepository {
         "SELECT count(*)::int AS count FROM posts WHERE status='PUBLISHED'",
       )
     ).rows[0].count;
+  }
+  async sitemapEntries() {
+    return serialize(
+      (
+        await this.db.query<Pick<PostSummary, 'slug' | 'updatedAt'>>(
+          `SELECT slug,updated_at AS "updatedAt" FROM posts WHERE status='PUBLISHED'
+          ORDER BY published_at DESC NULLS LAST,id LIMIT 49997`,
+        )
+      ).rows,
+    );
+  }
+  async listSeries(ownerId?: string | null) {
+    const scope = ownerId === undefined ? '' : 'WHERE owner_id IS NOT DISTINCT FROM $1';
+    return (
+      await this.db.query<PostSeries>(
+        `SELECT ${seriesColumns} FROM post_series ${scope} ORDER BY name,id LIMIT 200`,
+        ownerId === undefined ? [] : [ownerId],
+      )
+    ).rows;
+  }
+  async findSeries(id: string) {
+    return (
+      (
+        await this.db.query<PostSeries>(`SELECT ${seriesColumns} FROM post_series WHERE id=$1`, [
+          id,
+        ])
+      ).rows[0] ?? null
+    );
+  }
+  async saveSeries(input: { id?: string; name: string }, actorId: string) {
+    return transaction(this.db, async (connection) => {
+      const result = input.id
+        ? await connection.query<PostSeries>(
+            `UPDATE post_series SET name=$1 WHERE id=$2 RETURNING ${seriesColumns}`,
+            [input.name, input.id],
+          )
+        : await connection.query<PostSeries>(
+            `INSERT INTO post_series(name,owner_id) VALUES($1,$2) RETURNING ${seriesColumns}`,
+            [input.name, actorId],
+          );
+      const series = result.rows[0];
+      if (!series) throw new AppError(404, '시리즈를 찾을 수 없습니다.');
+      await audit(connection, actorId, 'post.series.saved', series.id);
+      return series;
+    });
+  }
+  async deleteSeries(id: string, actorId: string) {
+    try {
+      await transaction(this.db, async (connection) => {
+        const deleted = await connection.query('DELETE FROM post_series WHERE id=$1 RETURNING id', [
+          id,
+        ]);
+        if (!deleted.rows.length) throw new AppError(404, '시리즈를 찾을 수 없습니다.');
+        await audit(connection, actorId, 'post.series.deleted', id);
+      });
+    } catch (error) {
+      if ((error as { constraint?: string }).constraint === 'posts_series_id_fkey')
+        throw new AppError(409, '시리즈에 연결된 글을 먼저 분리해주세요.');
+      throw error;
+    }
+  }
+  async publishedSeriesEntries(id: string) {
+    return (
+      await this.db.query<SeriesEntry>(
+        `SELECT slug,title,series_position AS position FROM posts
+         WHERE series_id=$1 AND status='PUBLISHED' AND NOT body_removed ORDER BY series_position`,
+        [id],
+      )
+    ).rows;
   }
   async categories() {
     return serialize(
@@ -116,6 +189,18 @@ export class PostgresPostsRepository implements PostRepository {
     );
   }
   async save(input: PostInput & { renderedHtml: string }, actorId: string) {
+    try {
+      return await this.savePost(input, actorId);
+    } catch (error) {
+      const { constraint } = error as { constraint?: string };
+      if (constraint === 'posts_series_position_key')
+        throw new AppError(409, '이 시리즈에서 이미 사용 중인 순서입니다.');
+      if (constraint === 'posts_series_id_fkey')
+        throw new AppError(409, '시리즈가 삭제되었습니다. 목록을 새로고침해 주세요.');
+      throw error;
+    }
+  }
+  private async savePost(input: PostInput & { renderedHtml: string }, actorId: string) {
     const id = await transaction(this.db, async (connection) => {
       const values = [
         input.slug,
@@ -127,14 +212,21 @@ export class PostgresPostsRepository implements PostRepository {
         input.tags,
         input.status,
         input.categoryId,
+        input.series?.id ?? null,
+        input.series?.position ?? null,
       ];
       const result = input.id
         ? await connection.query<{ id: string }>(
-            `UPDATE posts SET slug=$1,title=$2,excerpt=$3,source=$4,format=$5,rendered_html=$6,tags=$7,status=$8,category_id=$9,updated_at=now(),published_at=CASE WHEN $8='PUBLISHED' THEN coalesce(published_at,now()) ELSE NULL END WHERE id=$10 AND NOT body_removed RETURNING id`,
-            [...values, input.id],
+            `UPDATE posts SET slug=$1,title=$2,excerpt=$3,source=$4,format=$5,rendered_html=$6,tags=$7,status=$8,category_id=$9,
+            series_id=CASE WHEN $12 THEN $10::uuid ELSE series_id END,
+            series_position=CASE WHEN $12 THEN $11::int ELSE series_position END,
+            updated_at=now(),published_at=CASE WHEN $8='PUBLISHED' THEN coalesce(published_at,now()) ELSE NULL END
+            WHERE id=$13 AND NOT body_removed RETURNING id`,
+            [...values, input.series !== undefined, input.id],
           )
         : await connection.query<{ id: string }>(
-            `INSERT INTO posts(slug,title,excerpt,source,format,rendered_html,tags,status,category_id,author_id,published_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,CASE WHEN $8='PUBLISHED' THEN now() ELSE NULL END) RETURNING id`,
+            `INSERT INTO posts(slug,title,excerpt,source,format,rendered_html,tags,status,category_id,series_id,series_position,author_id,published_at)
+            VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,CASE WHEN $8='PUBLISHED' THEN now() ELSE NULL END) RETURNING id`,
             [...values, actorId],
           );
       if (!result.rows[0])

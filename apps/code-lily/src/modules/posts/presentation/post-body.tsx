@@ -1,7 +1,8 @@
-import { prepareArticleContent } from '@codelily/content/article';
+import type { prepareArticleContent } from '@codelily/content/article';
 
-export function PostBody({ renderedHtml }: { renderedHtml: string }) {
-  const { html, outline } = prepareArticleContent(renderedHtml);
+export type ArticleContent = ReturnType<typeof prepareArticleContent>;
+
+export function PostBody({ html, outline, preview }: ArticleContent & { preview: boolean }) {
   return (
     <>
       {outline.length > 1 ? (
@@ -14,7 +15,22 @@ export function PostBody({ renderedHtml }: { renderedHtml: string }) {
             <ol className="mb-3 border-t border-line pt-2 text-sm">
               {outline.map(({ id, title, level }) => (
                 <li key={id} className={level === 3 ? 'ml-5' : undefined}>
-                  <a href={`#${id}`} className="publication-link">
+                  <a
+                    href={`#${id}`}
+                    className="publication-link"
+                    onClick={
+                      preview
+                        ? (event) => {
+                            event.preventDefault();
+                            const heading = event.currentTarget
+                              .closest('article')
+                              ?.querySelector<HTMLElement>(`#${id}`);
+                            heading?.focus({ preventScroll: true });
+                            heading?.scrollIntoView({ block: 'start' });
+                          }
+                        : undefined
+                    }
+                  >
                     {title}
                   </a>
                 </li>
@@ -24,7 +40,7 @@ export function PostBody({ renderedHtml }: { renderedHtml: string }) {
         </nav>
       ) : null}
       <div
-        className="content-body sun-editor-editable"
+        className="content-body"
         dangerouslySetInnerHTML={{ __html: html }}
       />
     </>
