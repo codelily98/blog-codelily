@@ -32,7 +32,7 @@ Google의 redirect 등록 변경은 반영까지 시간이 걸릴 수 있다. `r
 
 기존 DB/R2/OWNER/auth secret은 보존한다. env 디렉터리 0700, 원본 backup과 새 env 0600, 임시 파일+원자적 교체를 사용한다. backup은 같은 비공개 디렉터리의 `code-lily.env.before-google`이며 Git 제외 대상이다. 입력 중 파일 변경을 감지하면 중단한다. 여러 관리자가 동시에 실행하지 않는다. 이미 입력한 credential 회전용으로 쓰지 않는다.
 
-현재 자동 SSH 인증은 불가하므로 운영자가 기존 키로 접속 가능한 터미널에서 진행한다. 새 관리 키 등록이나 SSH 보호 완화는 이 절차에 포함하지 않는다. 새 파일이 아직 서버에 없으면 PC의 저장소 루트 PowerShell에서 전송한다.
+운영 접속에는 등록된 관리 키와 SSH 에이전트를 사용한다. 숨김 입력 도구는 운영자가 직접 조작하는 터미널에서 실행한다. 새 파일이 아직 서버에 없으면 PC의 저장소 루트 PowerShell에서 전송한다. [배포 시 SSH 인증 절차](배포-복구.md)
 
 ```powershell
 scp scripts/configure-google.py tests/google_setup_test.py iwinv-cloud:
@@ -85,6 +85,12 @@ sudo docker compose --env-file infra/.env -f infra/compose.production.yml exec -
 - [ ] 별도 MEMBER/EDITOR 실계정 권한과 일반 회원 공개 전 브랜딩/정책/약관 URL·OAuth 게시 여부를 검증한다.
 
 결과는 프로젝트 문서와 진행현황에 명령·통과/미검증·다음 시작점을 기록한다. 로컬 fixture 세션 검증을 실제 Google 인증 성공으로 대체하지 않는다.
+
+## 스키마 008 게시글 편집 재인수
+
+- 운영 Google 로그인 또는 기존 OWNER 세션으로 `내 작업 공간 → 새 글 작성`에 진입한다. 인수용 합성 문구를 입력하고 ‘초안 저장됨’을 확인한 뒤 새로고침과 ‘미발행 초안’에서 제목과 본문을 다시 확인한다.
+- 발행 화면 미리보기와 익명 접근 제한을 확인한다. 운영 사이트맵과 RSS에는 현재 공개 글만 표시되어야 한다. 합성 데이터 식별자는 Git 밖에 보관한다.
+- 공개 발행 검증은 운영자가 승인한 원고와 주소로 진행한다. 공개 상세·시리즈·RSS·사이트맵 반영과 수정 초안 저장 중 공개본 유지 여부를 대조한다. [현재 운영 릴리스](../../infra/releases/2026-11-24-drafts-active.json)
 
 ## 2026-11-04 실제 검증 근거와 한계
 

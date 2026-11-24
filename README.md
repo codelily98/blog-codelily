@@ -29,7 +29,9 @@ Docker 앱 미리보기는 `npm run local:up`으로 시작합니다. host 개발
 
 접속: `http://localhost:3000`. `DATABASE_URL`이 없으면 개발용 PGlite를 `.local/code-lily-db`에 사용합니다. seed는 이 저장소에서 작성한 예시 콘텐츠이며 실제 이력·프로필이 아닙니다. 운영 콘텐츠로 교체하고 공개 연락처를 검토한 뒤 배포합니다. seed는 비밀번호·Google 계정·운영 로그인 우회를 생성하지 않습니다.
 
-공개 아카이브 `/posts`의 검색·카테고리·태그는 URL로 공유할 수 있습니다. `/feed.xml`은 최근 공개 글의 제목과 요약을 제공하는 RSS입니다.
+공개 아카이브 `/posts`의 검색·카테고리·태그는 URL로 공유할 수 있습니다. `/series`에서 공개 연재를 모아보고, 글 상세에서 목차와 코드 복사를 사용할 수 있습니다. `/feed.xml`은 최근 공개 글의 요약을 제공하며 `/sitemap.xml`은 공개 주소를 안내합니다.
+
+글 작성자는 **내 작업 공간 → 미발행 초안**에서 자동 저장된 내용을 이어 쓸 수 있습니다. 공개 글의 수정 초안은 **수정본 발행**을 선택했을 때 공개본에 반영됩니다. 편집기에서 발행 화면을 미리볼 수 있습니다.
 
 ## Google 전용 로그인
 
@@ -55,7 +57,7 @@ Google Cloud에서 OAuth Web application client를 만들고 다음 redirect URI
 apps/code-lily/src/
   app/                         Next.js page/route, 얇은 입출력 경계
   modules/
-    posts/ about/ identity/ telemetry/ uploads/
+    posts/ about/ identity/ telemetry/ uploads/ work/
       domain/                  모델·정책·port
       application/             사용 사례
       infrastructure/          SQL·인증·외부 adapter
@@ -97,6 +99,6 @@ Linux/macOS는 `CODELILY_AUTH_FIXTURE=1 npm run test:e2e`를 사용합니다. �
 
 [iwinv Ubuntu 26.04 최초 배포](docs/operations/iwinv-최초배포.md), [Cloudflare·Caddy·R2 운영 지침](docs/operations/Cloudflare-Caddy-R2.md), [배포·복구](docs/operations/배포-복구.md), [접근성 검증](docs/quality/접근성-검증.md)을 따릅니다. 서버 Docker 설치·시간 동기화는 완료했으며 DNS·OAuth·R2와 전체 배포 인수 상태는 [진행현황](docs/진행현황.md)을 확인합니다.
 
-공개 Posts·상세·About은 ISR 300초와 저장 후 경로 재검증을 사용합니다. 정적 자산과 R2 공개 이미지는 Cloudflare CDN으로 전달하고 회원·관리 응답은 no-store로 처리합니다. 운영은 실제 PostgreSQL만 허용하며 빌드는 CI에서 수행합니다.
+홈·아카이브·글 상세·시리즈는 요청 시 현재 공개 상태를 조회합니다. RSS와 사이트맵은 공개 상태를 다시 확인하며 About은 300초 ISR을 사용합니다. 해시 정적 자산과 R2 공개 이미지는 Cloudflare CDN으로 전달하고 회원·관리 응답은 `private, no-store`로 처리합니다. 운영은 PostgreSQL을 사용하며 배포 이미지는 운영 서버 밖에서 빌드합니다. [현재 운영 릴리스 및 복구 절차](docs/operations/배포-복구.md)
 
 원본 레퍼런스는 [Dong-Ding 블로그](https://blog.dongding.dev/)와 [저장소](https://github.com/Kun-9/Dongding-Blog)입니다. 화면 구성과 테마 방향을 참고했으며 글·개인 이력·기존 소스는 복사하지 않았습니다.

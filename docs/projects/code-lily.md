@@ -108,9 +108,11 @@
 
 ## 다음 시작점
 
-2026-11-05 운영 재개 기준: 소스 `c129f71`의 `membership-c2ea35c74904`가 20:28:48 KST에 운영 반영됐고 최종 기록 `df77320`까지 main에 반영했다. Google 기본 범위 3개 저장·실제 회원 로그인·댓글·EDITOR 자기 글 CRUD와 합성 정리를 완료했다. [최신 활성 명세](../../infra/releases/2026-11-05-public-home-active.json)와 [업체 조건 확인 기록](../operations/개인정보-업체조건-확인.md)을 따른다. 다음은 명시 승인 후 발송한 업체 문의 3통의 회신을 확인해 정책의 국가·근거·보유 표를 확정하고 공지·일반 게시를 진행하는 것이다. 현재 정책은 검토본·Google Testing이며 예약 장기 관측은 별도로 남아 있다.
+현재 운영 기준은 `drafts-3f5fcbe6391e`와 스키마 008이다. 실제 OWNER 세션에서 초안 자동 저장·재열기·미리보기를 확인한 뒤 운영자가 승인한 첫 글을 발행해 상세·RSS·사이트맵을 대조한다. 일반 가입 공개에 필요한 정책·약관, Google 게시와 역할별 인수는 운영 준비 문서에 따른다. [활성 릴리스 명세](../../infra/releases/2026-11-24-drafts-active.json) · [Google OAuth 및 편집 인수](../operations/Google-OAuth-인수.md) · [일반 공개 준비](../operations/Google-OAuth-공개준비.md)
 
-아래는 앞선 작업 단계의 이력이며 현재 재개 기준을 대신하지 않는다.
+### 이전 운영 인수 기록
+
+2026-11-05 20:28:48 KST에 `membership-c2ea35c74904`를 활성화했다. 당시 Google 기본 범위 3개 저장·실제 회원 로그인·댓글·EDITOR 글 작성·수정·삭제와 합성 데이터 정리를 확인했다. [당시 릴리스 명세](../../infra/releases/2026-11-05-public-home-active.json) · [업체 조건 확인 기록](../operations/개인정보-업체조건-확인.md)
 
 2026-11-05 16:39:01 KST에 `membership-ba1801ade6df` 운영 반영을 완료했다. 소스 `5871a46`의 로컬 Linux 빌드·테스트 24개·PostgreSQL 16 Chrome E2E 8개와 암호화 외부 백업을 검증한 뒤 DB migration 변경 없이 앱·도구 이미지를 전환했다. 새 정책·가입 연령 확인은 운영에서 제공되며 기존 EDITOR 세션의 Work 진입·검색도 유지된다. [최신 활성 명세](../../infra/releases/2026-11-05-membership-active.json)를 기준으로 정책 확정·Google 일반 게시·실제 신규 Google 로그인 재인수와 예약 장기 관측을 이어간다. 정책은 공개 전 검토본을 유지한다.
 
