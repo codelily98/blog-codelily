@@ -16,6 +16,147 @@ async function authenticate(context: BrowserContext, role: string) {
   ]);
 }
 
+test('공개 상세의 관련 글은 연관도순으로 표시되고 공개 해제를 반영한다', async ({
+  browser,
+  context,
+  page,
+  baseURL,
+}) => {
+  test.skip(process.env.CODELILY_AUTH_FIXTURE !== '1', 'Requires isolated fixture sessions.');
+  await authenticate(context, 'owner');
+  const headers = { origin: 'http://localhost:3000' };
+  const category = await context.request.post('/api/categories', {
+    headers,
+    data: { name: '관련 글 검증 분류', slug: 'related-posts-fixture' },
+  });
+  expect(category.ok()).toBe(true);
+  const categoryId: string = (await category.json()).data.id;
+  const ids: string[] = [];
+  const firstTag = '관련검증하나';
+  const secondTag = '관련검증둘';
+  const readerContext = await browser.newContext({ baseURL });
+  const reader = await readerContext.newPage();
+  const errors: string[] = [];
+  reader.on('pageerror', (error) => errors.push(error.message));
+  reader.on('console', (message) => {
+    if (message.type() === 'error' || message.type() === 'warning') errors.push(message.text());
+  });
+  const related = reader.getByRole('region', { name: '관련 글', exact: true });
+
+  async function savePost(
+    suffix: string,
+    title: string,
+    tags: string[],
+    categoryId: string | null,
+    status: 'DRAFT' | 'PUBLISHED' = 'PUBLISHED',
+  ) {
+    const data = {
+      slug: `related-posts-${suffix}`,
+      title,
+      tags,
+      categoryId,
+      status,
+      excerpt: '관련 글 동작 검증에 사용할 요약입니다.',
+      source: '관련 글 검증에 사용할 본문입니다.',
+      format: 'MARKDOWN',
+    };
+    const saved = await context.request.post('/api/posts', { headers, data });
+    expect(saved.ok()).toBe(true);
+    const id: string = (await saved.json()).data.id;
+    ids.push(id);
+    return { id, data, url: `/posts/${data.slug}` };
+  }
+
+  try {
+    const current = await savePost(
+      'current',
+      '관련 글 기준 글',
+      [firstTag, secondTag, secondTag],
+      categoryId,
+    );
+    const strong = await savePost('strong', '태그가 두 개 겹치는 글', [firstTag, secondTag], null);
+    const older = await savePost('older', '태그가 겹치는 이전 글', [firstTag], null);
+    const sameCategory = await savePost(
+      'category',
+      '태그와 분류가 같은 글',
+      [firstTag],
+      categoryId,
+    );
+    const newer = await savePost('newer', '태그가 겹치는 최신 글', [secondTag, secondTag], null);
+    await savePost('draft', '비공개 관련 글', [firstTag, secondTag], categoryId, 'DRAFT');
+    const categoryOnly = await savePost('category-only', '분류만 같은 글', [], categoryId);
+    const unrelated = await savePost('unrelated', '관련 글이 없는 글', [], null);
+
+    for (const [width, height] of [
+      [1440, 1100],
+      [390, 844],
+    ]) {
+      await reader.setViewportSize({ width, height });
+      expect((await reader.goto(current.url))?.status()).toBe(200);
+      await expect(reader).toHaveTitle(/관련 글 기준 글/);
+      await expect(reader.getByRole('heading', { level: 1 })).toHaveText(current.data.title);
+      await expect(reader.locator('nextjs-portal')).toHaveCount(0);
+      if (width === 390) await reader.getByRole('button', { name: '라이트 테마로 변경' }).click();
+      await expect(related.getByRole('link')).toHaveText([
+        strong.data.title,
+        sameCategory.data.title,
+        newer.data.title,
+      ]);
+      const audit = await new AxeBuilder({ page: reader })
+        .withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa'])
+        .analyze();
+      expect(audit.violations).toEqual([]);
+      expect(await reader.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+        true,
+      );
+      if (process.env.CODELILY_EVIDENCE_DIR)
+        await related.screenshot({
+          path: path.join(process.env.CODELILY_EVIDENCE_DIR, `post-related-${width}.png`),
+        });
+      const link = related.getByRole('link', { name: strong.data.title, exact: true });
+      await link.focus();
+      await expect(link).toBeFocused();
+      await link.press('Enter');
+      await expect(reader).toHaveURL(new RegExp(`${strong.url}$`));
+      await expect(reader.getByRole('heading', { level: 1 })).toHaveText(strong.data.title);
+    }
+
+    await reader.goto(categoryOnly.url);
+    await expect(related.getByRole('link')).toHaveText([
+      sameCategory.data.title,
+      current.data.title,
+    ]);
+    await reader.goto(unrelated.url);
+    await expect(related).toHaveCount(0);
+    await page.goto(`/manage/posts/${current.id}`);
+    await page.getByRole('button', { name: '발행 화면 미리보기' }).click();
+    const preview = page.getByRole('dialog', { name: '발행 화면 미리보기' });
+    await expect(preview.getByRole('heading', { name: current.data.title })).toBeVisible();
+    await expect(preview.getByRole('region', { name: '관련 글', exact: true })).toHaveCount(0);
+
+    const unpublished = await context.request.put(`/api/posts/${strong.id}`, {
+      headers,
+      data: { ...strong.data, status: 'DRAFT' },
+    });
+    expect(unpublished.ok()).toBe(true);
+    const noScript = await browser.newContext({ baseURL, javaScriptEnabled: false });
+    try {
+      const serverRendered = await noScript.newPage();
+      expect((await serverRendered.goto(current.url))?.status()).toBe(200);
+      await expect(
+        serverRendered.getByRole('region', { name: '관련 글', exact: true }).getByRole('link'),
+      ).toHaveText([sameCategory.data.title, newer.data.title, older.data.title]);
+    } finally {
+      await noScript.close();
+    }
+    expect(errors).toEqual([]);
+  } finally {
+    await readerContext.close();
+    for (const id of ids) await context.request.delete(`/api/posts/${id}`, { headers });
+    await context.request.delete('/api/categories', { headers, data: { id: categoryId } });
+  }
+});
+
 test('게시글 초안은 자동 저장·재시도·두 탭 충돌을 처리하며 공개본은 발행 때만 바뀐다', async ({
   page,
   context,

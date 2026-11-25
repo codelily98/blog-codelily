@@ -62,6 +62,7 @@ export interface PostSeries {
   ownerId: string | null;
 }
 export type SeriesEntry = Pick<PostSummary, 'slug' | 'title'> & { position: number };
+export type RelatedPost = Pick<PostSummary, 'id' | 'slug' | 'title' | 'excerpt'>;
 export interface PublicSeriesSummary {
   id: string;
   name: string;
@@ -116,6 +117,7 @@ export interface PostRepository {
   }): Promise<PostSummary[]>;
   publishedCount(): Promise<number>;
   sitemapEntries(): Promise<Pick<PostSummary, 'slug' | 'updatedAt'>[]>;
+  findRelatedPublished(postId: string, limit: number): Promise<RelatedPost[]>;
   listSeries(ownerId?: string | null): Promise<PostSeries[]>;
   findSeries(id: string): Promise<PostSeries | null>;
   saveSeries(input: { id?: string; name: string }, actorId: string): Promise<PostSeries>;

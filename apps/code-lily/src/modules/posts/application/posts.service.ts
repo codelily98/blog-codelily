@@ -29,6 +29,11 @@ export class PostsService {
   sitemapEntries() {
     return this.repository.sitemapEntries();
   }
+  async relatedPosts(post: Post) {
+    if (post.status !== 'PUBLISHED' || post.bodyRemoved || (!post.categoryId && !post.tags.length))
+      return [];
+    return this.repository.findRelatedPublished(post.id, 3);
+  }
   seriesManagement(actor: Actor | null) {
     writer(actor);
     return this.repository.listSeries(actor.role === 'OWNER' ? undefined : actor.id);

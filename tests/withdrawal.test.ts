@@ -123,7 +123,8 @@ test('withdrawal protects related data, detaches retained content and replays af
         '탈퇴한 회원',
       );
       assert.equal(comments.find((comment) => comment.body === 'other author')?.authorId, 'owner');
-      assert.equal((await posts.comments((await posts.read('owner-public')).id)).length, 0);
+      const ownerPost = await posts.read('owner-public');
+      assert.equal((await posts.comments(ownerPost.id)).length, 0);
       await assert.rejects(posts.read('keep-draft'), { status: 404 });
       await assert.rejects(posts.read('delete-empty'), { status: 404 });
       await assert.rejects(posts.read('delete-draft'), { status: 401 });
@@ -133,6 +134,11 @@ test('withdrawal protects related data, detaches retained content and replays af
       assert.equal(discussion.renderedHtml, '');
       assert.equal(discussion.excerpt, '');
       assert.equal(discussion.authorId, null);
+      assert.deepEqual(
+        (await posts.relatedPosts(ownerPost)).map((post) => post.slug),
+        [retained.slug],
+      );
+      assert.deepEqual(await posts.relatedPosts(discussion), []);
       assert.deepEqual(
         (await posts.comments(discussion.id)).map((comment) => comment.body),
         ['protected'],

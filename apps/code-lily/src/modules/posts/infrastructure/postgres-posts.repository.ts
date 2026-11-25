@@ -14,6 +14,7 @@ import type {
   PreparedPost,
   PostSeries,
   PublicSeriesSummary,
+  RelatedPost,
   SeriesEntry,
 } from '../domain/models';
 
@@ -59,6 +60,26 @@ export class PostgresPostsRepository implements PostRepository {
         )
       ).rows,
     );
+  }
+  async findRelatedPublished(postId: string, limit: number) {
+    return (
+      await this.db.query<RelatedPost>(
+        `SELECT candidate.id,candidate.slug,candidate.title,candidate.excerpt
+         FROM posts current_post
+         JOIN posts candidate ON candidate.id <> current_post.id
+           AND (candidate.tags && current_post.tags OR candidate.category_id = current_post.category_id)
+         WHERE current_post.id=$1 AND current_post.status='PUBLISHED' AND NOT current_post.body_removed
+           AND candidate.status='PUBLISHED' AND NOT candidate.body_removed
+         ORDER BY (
+           SELECT count(DISTINCT tag)
+           FROM unnest(candidate.tags) AS matched(tag)
+           WHERE tag = ANY(current_post.tags)
+         ) DESC, coalesce(candidate.category_id = current_post.category_id, false) DESC,
+           candidate.published_at DESC NULLS LAST, candidate.id
+         LIMIT $2`,
+        [postId, limit],
+      )
+    ).rows;
   }
   async listSeries(ownerId?: string | null) {
     const scope = ownerId === undefined ? '' : 'WHERE owner_id IS NOT DISTINCT FROM $1';

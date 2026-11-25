@@ -7,6 +7,7 @@ import { prepareArticleContent } from '@codelily/content/article';
 import { services } from '@/composition';
 import { Comments } from '@/modules/posts/presentation/comments';
 import { PostArticle } from '@/modules/posts/presentation/post-article';
+import { RelatedPosts } from '@/modules/posts/presentation/related-posts';
 import { SeriesNavigation } from '@/modules/posts/presentation/series-navigation';
 import { AppError } from '@/modules/identity/domain/policy';
 import { feedPath } from '@/presentation/publication';
@@ -49,12 +50,13 @@ export default async function PostDetail({ params }: Props) {
   if (!post) notFound();
 
   const { posts } = await services();
-  const [comments, series] = await Promise.all([
+  const [comments, series, relatedPosts] = await Promise.all([
     posts.comments(post.id).catch((error) => {
       if (error instanceof AppError && [401, 403, 404].includes(error.status)) notFound();
       throw error;
     }),
     posts.publicSeries(post),
+    posts.relatedPosts(post),
   ]);
   return (
     <main id="main-content" className="post-shell publication-reader">
@@ -67,6 +69,7 @@ export default async function PostDetail({ params }: Props) {
         content={post.bodyRemoved ? null : prepareArticleContent(post.renderedHtml)}
       />
       {series ? <SeriesNavigation {...series} /> : null}
+      <RelatedPosts posts={relatedPosts} />
       <Comments key={post.id} postId={post.id} initialComments={comments} />
     </main>
   );
