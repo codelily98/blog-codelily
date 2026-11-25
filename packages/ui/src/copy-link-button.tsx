@@ -39,7 +39,7 @@ export function CopyLinkButton({
     <div className={`[@media(scripting:none)]:hidden ${manual ? 'w-full min-w-0' : ''}`}>
       <Button
         variant={compact ? 'ghost' : 'secondary'}
-        className={compact ? 'w-11 px-0' : undefined}
+        className={compact ? 'w-11 px-0 transition-none' : 'transition-none'}
         aria-label={label}
         onClick={copy}
       >
