@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { CopyLinkButton } from '@codelily/ui';
 import type { PostReaderDetails } from '../domain/models';
 import { PostBody, type ArticleContent } from './post-body';
 import { PostDate } from './post-date';
@@ -8,13 +9,16 @@ export function PostArticle({
   details,
   content,
   preview = false,
+  shareUrl,
 }: {
   details: PostReaderDetails;
   content: ArticleContent | null;
   preview?: boolean;
+  shareUrl?: string;
 }) {
   const { title, excerpt, tags, date, categoryName, authorName, readMinutes, bodyRemoved } =
     details;
+  const publicShareUrl = preview ? undefined : shareUrl;
   return (
     <article>
       <header className="mb-9 border-b border-line pb-8">
@@ -29,10 +33,13 @@ export function PostArticle({
         {excerpt ? (
           <p className="mt-5 break-words text-[1rem] leading-8 text-muted sm:text-lg">{excerpt}</p>
         ) : null}
-        <p className="mt-5 text-sm text-muted">{authorName}</p>
+        <div className="mt-5 flex flex-wrap items-center justify-between gap-x-5 gap-y-3">
+          <p className="text-sm text-muted">{authorName}</p>
+          {publicShareUrl ? <CopyLinkButton url={publicShareUrl} label="글 링크 복사" /> : null}
+        </div>
       </header>
       {content ? (
-        <PostBody {...content} preview={preview} />
+        <PostBody {...content} preview={preview} shareUrl={publicShareUrl} />
       ) : (
         <p className="rounded-lg border border-line p-5 text-sm leading-7 text-muted">
           회원 탈퇴 요청에 따라 글 본문이 삭제되었습니다. 다른 회원이 작성한 댓글은 아래에서 볼 수

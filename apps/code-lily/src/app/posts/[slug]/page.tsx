@@ -10,11 +10,16 @@ import { PostArticle } from '@/modules/posts/presentation/post-article';
 import { RelatedPosts } from '@/modules/posts/presentation/related-posts';
 import { SeriesNavigation } from '@/modules/posts/presentation/series-navigation';
 import { AppError } from '@/modules/identity/domain/policy';
-import { feedPath } from '@/presentation/publication';
+import { feedPath, publicationUrl } from '@/presentation/publication';
 
 export const dynamic = 'force-dynamic';
 
 type Props = { params: Promise<{ slug: string }> };
+
+function publishedPostPath(slug: string) {
+  return `/posts/${encodeURIComponent(slug)}`;
+}
+
 const publishedPost = cache(async (slug: string) => {
   const { posts } = await services();
   try {
@@ -32,7 +37,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     title: post.title,
     description: post.excerpt,
     alternates: {
-      canonical: `/posts/${encodeURIComponent(post.slug)}`,
+      canonical: publishedPostPath(post.slug),
       types: { 'application/rss+xml': feedPath },
     },
     openGraph: {
@@ -67,6 +72,7 @@ export default async function PostDetail({ params }: Props) {
         key={`${post.id}:${post.editVersion}`}
         details={{ ...post, date: post.publishedAt || post.createdAt }}
         content={post.bodyRemoved ? null : prepareArticleContent(post.renderedHtml)}
+        shareUrl={new URL(publishedPostPath(post.slug), publicationUrl()).href}
       />
       {series ? <SeriesNavigation {...series} /> : null}
       <RelatedPosts posts={relatedPosts} />

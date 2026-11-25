@@ -334,6 +334,7 @@ test('발행 화면 미리보기는 저장 전 내용과 목차를 렌더링하�
         .toBeGreaterThan(0);
       const toc = dialog.getByRole('navigation', { name: '본문 목차' });
       await expect(toc.getByRole('link')).toHaveCount(2);
+      await expect(dialog.getByRole('button', { name: /링크 복사$/ })).toHaveCount(0);
       expect(await dialog.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(
         true,
       );

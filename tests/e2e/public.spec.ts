@@ -304,6 +304,87 @@ test('Posts → category → detail → About; light/dark, mobile and accessibil
   await expect(page.getByRole('dialog')).not.toBeVisible();
   expect(errors).toEqual([]);
 });
+
+test('공개 글과 목차의 공유 링크를 복사하고 클립보드 거부 시 직접 선택한다', async ({
+  baseURL,
+  context,
+  page,
+}) => {
+  const articlePath = '/posts/small-server-architecture';
+  const articleUrl = new URL(articlePath, baseURL).href;
+  const fragment = '#article-section-2';
+  const sectionUrl = `${articleUrl}${fragment}`;
+  const outline = page.getByRole('navigation', { name: '본문 목차' });
+  const sectionCopy = outline.getByRole('button', { name: '기본 원칙 링크 복사', exact: true });
+  const errors: string[] = [];
+  page.on('pageerror', (error) => errors.push(error.message));
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+
+  for (const viewport of [
+    { width: 1440, height: 1100 },
+    { width: 390, height: 844 },
+  ]) {
+    await page.setViewportSize(viewport);
+    const visited = `${articleUrl}?utm_source=fixture#article-section-1`;
+    expect((await page.goto(visited))?.status()).toBe(200);
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(
+      '작은 서버에서 시작하는 단단한 아키텍처',
+    );
+    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', articleUrl);
+    if (viewport.width === 390)
+      await page.getByRole('button', { name: '라이트 테마로 변경' }).click();
+    const articleCopy = page.getByRole('button', { name: '글 링크 복사', exact: true });
+    await articleCopy.focus();
+    await expect(articleCopy).toBeFocused();
+    await page.keyboard.press('Enter');
+    await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).toBe(articleUrl);
+    await expect(page.getByRole('status').filter({ hasText: '링크를 복사했습니다.' })).toHaveCount(
+      1,
+    );
+
+    await expect(outline.getByRole('link', { name: '기본 원칙', exact: true })).toHaveAttribute(
+      'href',
+      fragment,
+    );
+    await sectionCopy.press('Space');
+    await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).toBe(sectionUrl);
+    await expect(page).toHaveURL(visited);
+    const copied = await page.evaluate(() => navigator.clipboard.readText());
+    expect((await page.goto(copied))?.status()).toBe(200);
+    await expect(page.locator('.content-body :target')).toHaveText('기본 원칙');
+    await expect(page.getByRole('heading', { name: '기본 원칙', exact: true })).toBeInViewport();
+    const audit = await new AxeBuilder({ page })
+      .include('main > article')
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa'])
+      .analyze();
+    expect(audit.violations).toEqual([]);
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
+    ).toBe(true);
+  }
+
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator.clipboard, 'writeText', {
+      async value() {
+        throw new DOMException('Clipboard permission denied', 'NotAllowedError');
+      },
+    });
+  });
+  await page.goto(articleUrl);
+  await sectionCopy.click();
+  const manualLink = page.getByRole('textbox', { name: '복사할 링크', exact: true });
+  await expect(manualLink).toBeVisible();
+  await expect(manualLink).not.toBeEditable();
+  await expect(manualLink).toHaveValue(sectionUrl);
+  await manualLink.press('ControlOrMeta+a');
+  expect(
+    await manualLink.evaluate((input: HTMLInputElement) =>
+      input.value.slice(input.selectionStart ?? 0, input.selectionEnd ?? 0),
+    ),
+  ).toBe(sectionUrl);
+  expect(errors).toEqual([]);
+});
+
 test('archive search is server-rendered and RSS exposes only publication summaries', async ({
   browser,
   request,
@@ -327,6 +408,8 @@ test('archive search is server-rendered and RSS exposes only publication summari
     );
     await page.goto('/posts/small-server-architecture');
     const outline = page.getByRole('navigation', { name: '본문 목차' });
+    await expect(page.getByRole('button', { name: '글 링크 복사', exact: true })).toHaveCount(0);
+    await expect(outline.getByRole('button', { name: /링크 복사$/ })).toHaveCount(0);
     await outline.getByRole('link', { name: '기본 원칙', exact: true }).click();
     await expect(page).toHaveURL(/#article-section-2$/);
     await expect(page.getByRole('heading', { name: '기본 원칙', exact: true })).toBeFocused();
