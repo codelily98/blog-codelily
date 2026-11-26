@@ -9,6 +9,8 @@
     "react": "^19.2.0"
   },
   "dependencies": {
+    "@codelily/ui": "*",
+    "lucide-react": "1.66.0",
     "suneditor": "3.4.1"
   }
 }

@@ -6,7 +6,7 @@
 
 - [x] workspace·패키지 책임·소비 규칙 정의
 - [x] UI 토큰, Tailwind, 라이트/다크, Button·Field·Dialog·Toast·Spinner
-- [x] SunEditor wrapper: client-only 초기화/파괴, HTML/Markdown 원본, 편집 label·키보드, 읽기 스타일
+- [x] 공통 Markdown 원문·서식 도구, SunEditor HTML 서식·원본 편집, 편집 label·키보드, 읽기 스타일
 - [x] 콘텐츠: GFM 변환·서버 sanitize·허용 inline CSS·XSS 검사
 - [x] Chart: react-chartjs-2 + 텍스트 요약·동일 데이터 표
 - [x] Grid: Tabulator + 키보드/스크린리더용 표·명시적 pagination/한도
@@ -20,6 +20,12 @@
 공개 API를 통해 앱에서 사용할 수 있고 앱의 domain type을 공통 패키지가 import하지 않아야 한다. 외부 UI library는 해당 wrapper 내부에서만 import한다. imperative library는 mount·update·unmount를 모두 처리한다. 로딩·실패·빈 상태·대체 콘텐츠가 있어야 한다. 일반 공개 페이지 bundle에서 editor/chart/grid가 분리되어야 한다.
 
 ## 다음 시작점·기록
+
+### 2026-11-26 공통 편집 영역
+
+- `ContentEditor`는 Markdown 원문을 기본 텍스트 영역에서 편집한다. 공통 서식 버튼은 선택한 텍스트 또는 줄에 Markdown 문법을 삽입한다. Chromium에서는 서식 삽입도 브라우저의 실행 취소 기록에 포함된다. 브라우저 편집 명령을 쓸 수 없을 때는 선택 영역을 텍스트로 교체한다.
+- 원문 편집 영역의 색·패딩·최소 높이와 버튼의 초점·크기를 공통 토큰으로 맞췄다. 긴 줄은 표시상 줄바꿈하고, 편집 영역의 세로 높이를 조절할 수 있다. HTML은 독립적인 SunEditor 서식·원본 화면을 사용한다.
+- `EditorActions`는 저장 상태와 작업 버튼의 배치를 공유한다. 자동 저장, 미리보기, 발행·충돌 처리 정책은 각 호출 화면이 담당한다.
 
 2026-11-05 운영 반영. Work의 공통 편집기·정제·표 접근성 변경을 포함한 Linux 이미지를 운영에 활성화했다. 동일 이미지·PostgreSQL 16에서 Chrome E2E 7개를 통과했고 기존 OWNER의 Work 관리 화면 진입을 확인했다. [활성 명세](../../infra/releases/2026-11-05-work-active.json)
 

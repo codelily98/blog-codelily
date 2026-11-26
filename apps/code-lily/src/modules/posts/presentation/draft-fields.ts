@@ -6,7 +6,7 @@ export function initialDraftFields(post?: Post): PostDraftFields {
     slug: post?.slug ?? '',
     excerpt: post?.excerpt ?? '',
     source: post?.source ?? '',
-    format: post?.format ?? 'HTML',
+    format: post?.format ?? 'MARKDOWN',
     tagsText: post?.tags.join(', ') ?? '',
     categoryId: post?.categoryId ?? null,
     seriesId: post?.series?.id ?? null,

@@ -32,6 +32,7 @@ export function WorkWorkspace({
   const [notice, setNotice] = useState('');
   const editor = useRef<WorkEditorHandle>(null);
   const selected = tree.nodes.find((node) => node.id === selectedId) ?? null;
+  const selectedIsDocument = selected?.nodeType === 'DOCUMENT';
   const reload = useCallback(async () => {
     const next = await requestApi<Tree>('/api/work/tree');
     setTree(next);
@@ -222,12 +223,73 @@ export function WorkWorkspace({
       ) : null}
     </div>
   );
+  const selectedActions =
+    selected && manage ? (
+      <div
+        role="group"
+        aria-label="선택 항목 관리"
+        className={`flex flex-wrap items-center gap-2 rounded-xl border border-line bg-surface p-3 ${selectedIsDocument ? 'mt-5' : 'mb-5'}`}
+      >
+        <span className="mr-auto min-w-0 break-all px-1 text-sm font-semibold">
+          {selected.name} · {selected.isPublic ? '공개 설정' : '비공개'}
+        </span>
+        <Button
+          variant="ghost"
+          disabled={busy}
+          onClick={() => {
+            void begin('rename');
+          }}
+        >
+          이름 변경
+        </Button>
+        <Button
+          variant="ghost"
+          disabled={busy}
+          onClick={() => {
+            void begin('move');
+          }}
+        >
+          이동
+        </Button>
+        <Button
+          variant="ghost"
+          disabled={busy}
+          onClick={() => {
+            void begin('visibility');
+          }}
+        >
+          공개 설정
+        </Button>
+        <Button
+          variant="danger"
+          disabled={busy}
+          onClick={() => {
+            void begin('delete');
+          }}
+        >
+          삭제
+        </Button>
+      </div>
+    ) : null;
   return (
-    <main id="main-content" className="mx-auto max-w-[1440px] px-5 py-8 sm:px-6">
-      <header className="mb-6 flex flex-wrap items-center justify-between gap-4 border-b border-line pb-5">
+    <main
+      id="main-content"
+      className={`mx-auto max-w-[1440px] px-5 sm:px-6 ${selectedIsDocument ? 'pt-4 pb-8 sm:py-8' : 'py-8'}`}
+    >
+      <header
+        className={`flex flex-wrap items-center justify-between border-b border-line ${selectedIsDocument ? 'mb-4 gap-2 pb-3 sm:mb-6 sm:gap-4 sm:pb-5' : 'mb-6 gap-4 pb-5'}`}
+      >
         <div>
-          <h1 className="text-3xl font-bold">Work</h1>
-          <p className="mt-2 text-sm text-muted">업무 기록과 프로젝트 문서</p>
+          <h1
+            className={selectedIsDocument ? 'text-xl font-bold sm:text-3xl' : 'text-3xl font-bold'}
+          >
+            Work
+          </h1>
+          <p
+            className={`mt-2 text-sm text-muted ${selectedIsDocument ? 'sr-only sm:not-sr-only' : ''}`}
+          >
+            업무 기록과 프로젝트 문서
+          </p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button variant="secondary" className="lg:hidden" onClick={() => setDrawer(true)}>
@@ -323,52 +385,7 @@ export function WorkWorkspace({
           {!drawer ? sidebar : null}
         </aside>
         <div className="min-w-0">
-          {selected && manage ? (
-            <div
-              className="mb-5 flex flex-wrap items-center gap-2 rounded-xl border border-line bg-surface p-3"
-              aria-label="선택 항목 관리"
-            >
-              <span className="mr-auto min-w-0 break-all px-1 text-sm font-semibold">
-                {selected.name} · {selected.isPublic ? '공개 설정' : '비공개'}
-              </span>
-              <Button
-                variant="ghost"
-                disabled={busy}
-                onClick={() => {
-                  void begin('rename');
-                }}
-              >
-                이름 변경
-              </Button>
-              <Button
-                variant="ghost"
-                disabled={busy}
-                onClick={() => {
-                  void begin('move');
-                }}
-              >
-                이동
-              </Button>
-              <Button
-                variant="ghost"
-                disabled={busy}
-                onClick={() => {
-                  void begin('visibility');
-                }}
-              >
-                공개 설정
-              </Button>
-              <Button
-                variant="danger"
-                disabled={busy}
-                onClick={() => {
-                  void begin('delete');
-                }}
-              >
-                삭제
-              </Button>
-            </div>
-          ) : null}
+          {selectedIsDocument ? null : selectedActions}
           {loading ? (
             <Spinner label="Work 문서 불러오는 중" />
           ) : document ? (
@@ -390,6 +407,7 @@ export function WorkWorkspace({
               </p>
             </section>
           )}
+          {selectedIsDocument ? selectedActions : null}
         </div>
       </div>
       <Dialog

@@ -1,7 +1,7 @@
 'use client';
 import dynamic from 'next/dynamic';
 import { useCallback, useEffect, useImperativeHandle, useRef, useState, type Ref } from 'react';
-import { Button, Dialog, Spinner, Textarea } from '@codelily/ui';
+import { Button, Dialog, EditorActions, Spinner, Textarea } from '@codelily/ui';
 import { ApiError, requestApi } from '@/presentation/client-api';
 import type { WorkDocument } from '../domain/models';
 
@@ -33,6 +33,7 @@ export function WorkDocumentEditor({
   const [mode, setMode] = useState<'editor' | 'preview'>(manage ? 'editor' : 'preview');
   const [preview, setPreview] = useState(initial.renderedHtml);
   const [previewing, setPreviewing] = useState(false);
+  const [previewError, setPreviewError] = useState('');
   const [composing, setComposing] = useState(false);
   const [remote, setRemote] = useState<WorkDocument | null>(null);
   const [resolving, setResolving] = useState(false);
@@ -188,8 +189,9 @@ export function WorkDocumentEditor({
       setStatus(value === latest.current.saved ? 'saved' : 'dirty');
   }
   async function showPreview() {
+    if (previewing || mode === 'preview') return;
     setPreviewing(true);
-    setMessage('');
+    setPreviewError('');
     try {
       const html = await requestApi<string>('/api/work/preview', 'POST', {
         content: latest.current.content,
@@ -197,7 +199,7 @@ export function WorkDocumentEditor({
       setPreview(html);
       setMode('preview');
     } catch (error) {
-      setMessage((error as Error).message);
+      setPreviewError((error as Error).message);
     } finally {
       setPreviewing(false);
     }
@@ -210,89 +212,39 @@ export function WorkDocumentEditor({
     conflict: '저장 충돌',
   };
   return (
-    <section aria-label="Work 문서" className="min-w-0 space-y-5">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line pb-4">
-        <h2 className="min-w-0 break-words text-2xl font-bold">{initial.name}</h2>
-        {manage ? (
-          <div className="flex flex-wrap gap-2" aria-label="편집 모드">
-            <Button
-              variant="secondary"
-              aria-pressed={mode === 'editor'}
-              onClick={() => setMode('editor')}
-            >
-              편집
-            </Button>
-            <Button
-              variant="secondary"
-              aria-pressed={mode === 'preview'}
-              disabled={previewing}
-              onClick={() => {
-                void showPreview();
-              }}
-            >
-              {previewing ? '변환 중…' : '미리보기'}
-            </Button>
-            <Button
-              onClick={() => {
-                void save(true);
-              }}
-              disabled={status === 'saving' || status === 'conflict'}
-            >
-              지금 저장
-            </Button>
-          </div>
-        ) : (
-          <span className="text-sm text-muted">회원 열람</span>
-        )}
-      </div>
+    <section aria-label="Work 문서" className="min-w-0 space-y-4">
+      <header className="flex flex-wrap items-baseline justify-between gap-3">
+        <h2 className="min-w-0 break-words text-2xl font-bold tracking-tight sm:text-3xl">
+          {initial.name}
+        </h2>
+        {manage ? null : <span className="text-sm text-muted">회원 열람</span>}
+      </header>
       {manage ? (
-        <div
-          hidden={mode !== 'editor'}
-          onCompositionStartCapture={() => {
-            composingRef.current = true;
-            setComposing(true);
-          }}
-          onCompositionEndCapture={() => {
-            composingRef.current = false;
-            setComposing(false);
-          }}
+        <EditorActions
+          status={
+            <p role="status" className="min-w-0 text-sm leading-6 text-muted">
+              <span className="font-semibold text-ink">{states[status]}</span>
+              {status === 'saved' ? (
+                <>
+                  {' · '}
+                  <time dateTime={savedAt}>
+                    {new Date(savedAt).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' })} KST
+                  </time>
+                </>
+              ) : null}
+            </p>
+          }
         >
-          <details className="mb-3 rounded-lg border border-line bg-raised">
-            <summary className="min-h-11 cursor-pointer px-3 py-3 text-sm font-medium">
-              편집 안내
-            </summary>
-            <div className="space-y-1 px-3 pb-3 text-sm leading-6 text-muted">
-              <p>입력을 멈춘 뒤 1.5초 후 자동 저장됩니다. 최대 100,000자입니다.</p>
-              <p>
-                Markdown 원문을 편집합니다. 표·코드 블록·체크 목록을 지원합니다. Ctrl+S로 즉시
-                저장할 수 있습니다.
-              </p>
-            </div>
-          </details>
-          <ContentEditor
-            value={content}
-            onChange={change}
-            format="MARKDOWN"
-            markdownOnly
-            label="Work 본문"
-          />
-        </div>
-      ) : null}
-      {mode === 'preview' ? (
-        <article
-          className="content-body min-h-64 break-words"
-          aria-label="문서 미리보기"
-          dangerouslySetInnerHTML={{ __html: preview }}
-        />
-      ) : null}
-      {manage ? (
-        <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-line pt-4 text-sm text-muted">
-          <p role="status" aria-live="polite">
-            {states[status]} ·{' '}
-            {new Date(savedAt).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' })} KST
-          </p>
-          <span>{Array.from(content).length.toLocaleString('ko-KR')}자</span>
-        </footer>
+          <Button
+            className="transition-none"
+            onClick={() => {
+              void save(true);
+            }}
+            disabled={status === 'saving' || status === 'conflict'}
+          >
+            지금 저장
+          </Button>
+        </EditorActions>
       ) : null}
       {message ? (
         <p role="alert" className="text-sm text-danger">
@@ -333,6 +285,99 @@ export function WorkDocumentEditor({
             충돌 내용 비교
           </Button>
         </div>
+      ) : null}
+      {manage ? (
+        <div
+          role="group"
+          aria-label="편집 모드"
+          className="grid grid-cols-2 gap-1 rounded-xl border border-line bg-surface p-1"
+        >
+          <Button
+            variant={mode === 'editor' ? 'secondary' : 'ghost'}
+            className={
+              mode === 'editor'
+                ? 'border-accent/50 bg-accent/15 transition-none'
+                : 'transition-none'
+            }
+            aria-pressed={mode === 'editor'}
+            onClick={() => setMode('editor')}
+          >
+            편집
+          </Button>
+          <Button
+            variant={mode === 'preview' ? 'secondary' : 'ghost'}
+            className={
+              mode === 'preview'
+                ? 'border-accent/50 bg-accent/15 transition-none'
+                : 'transition-none'
+            }
+            aria-pressed={mode === 'preview'}
+            aria-disabled={previewing || undefined}
+            aria-busy={previewing || undefined}
+            onClick={() => {
+              void showPreview();
+            }}
+          >
+            미리보기
+          </Button>
+          <p role="status" className="sr-only">
+            {previewing ? '미리보기 변환 중…' : ''}
+          </p>
+        </div>
+      ) : null}
+      {previewError ? (
+        <p role="alert" className="text-sm text-danger">
+          {previewError}
+        </p>
+      ) : null}
+      {manage ? (
+        <div
+          hidden={mode !== 'editor'}
+          onCompositionStartCapture={() => {
+            composingRef.current = true;
+            setComposing(true);
+          }}
+          onCompositionEndCapture={() => {
+            composingRef.current = false;
+            setComposing(false);
+          }}
+        >
+          <details className="mb-2 text-sm text-muted">
+            <summary className="min-h-11 w-fit cursor-pointer px-1 py-3 font-medium">
+              편집 안내
+            </summary>
+            <div className="mb-3 space-y-1 rounded-lg border border-line bg-surface px-4 py-3 leading-6">
+              <p>입력을 멈춘 뒤 1.5초 후 자동 저장됩니다. 최대 100,000자입니다.</p>
+              <p>
+                Markdown 원문을 편집합니다. 표·코드 블록·체크 목록을 지원합니다. Ctrl+S로 즉시
+                저장할 수 있습니다.
+              </p>
+            </div>
+          </details>
+          <ContentEditor
+            value={content}
+            onChange={change}
+            format="MARKDOWN"
+            markdownOnly
+            label="Work 본문"
+          />
+        </div>
+      ) : null}
+      {mode === 'preview' ? (
+        <article
+          className={
+            manage
+              ? 'content-body min-h-64 break-words rounded-xl border border-line bg-raised px-4 py-6 sm:px-7'
+              : 'content-body min-h-64 break-words'
+          }
+          aria-label="문서 미리보기"
+          dangerouslySetInnerHTML={{ __html: preview }}
+        />
+      ) : null}
+      {manage ? (
+        <footer className="text-right text-xs text-muted tabular-nums">
+          {Array.from(content).length.toLocaleString('ko-KR')}자
+        </footer>
       ) : null}
       <Dialog
         open={remote !== null}

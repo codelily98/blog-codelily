@@ -54,14 +54,17 @@ test('Work OWNER workflow, member visibility, autosave recovery, conflict and ac
   const markdown = page
     .getByRole('textbox', { name: 'Work 본문 원본', exact: true })
     .filter({ visible: true });
+  const formatting = page
+    .locator('[data-editor-format="markdown"]')
+    .getByRole('group', { name: 'Markdown 서식', exact: true });
   const source =
     '---\nstatus: 진행중\n---\n\n# Work 원문 검증\n\n- [x] 완료\n- [ ] 예정\n\n[[내부 링크]]\n\n| 항목 | 상태 |\n|---|---|\n| 업무 | 완료 |\n\n```ts\nconst value = 1;\n```\n\n<script>alert(1)</script>\n\n' +
     '0123456789'.repeat(75);
   await expect(markdown).toBeVisible();
   await expect(page.getByRole('button', { name: 'HTML 편집', exact: true })).toHaveCount(0);
-  await expect(page.locator('.editor-shell .se-markdown-view-line')).toBeHidden();
-  await expect(page.locator('.editor-shell .se-status-bar')).toHaveCount(0);
-  await expect(markdown).toHaveCSS('resize', 'none');
+  await expect(markdown).toHaveClass(/\bmarkdown-source\b/);
+  await expect(formatting).toBeVisible();
+  await expect(markdown).toHaveCSS('resize', 'vertical');
   await expect(markdown).toHaveCSS('background-color', 'rgb(35, 48, 39)');
   await expect(markdown).toHaveCSS('color', 'rgb(244, 243, 233)');
   await markdown.fill(source);
@@ -70,6 +73,18 @@ test('Work OWNER workflow, member visibility, autosave recovery, conflict and ac
     .poll(async () => (await (await page.request.get(documentUrl)).json()).data.content)
     .toBe(source);
   await page.reload();
+  await expect(markdown).toHaveValue(source);
+  const selection = 'Work 원문 검증';
+  await markdown.evaluate((element, text) => {
+    const area = element as HTMLTextAreaElement;
+    const start = area.value.indexOf(text);
+    area.focus();
+    area.setSelectionRange(start, start + text.length);
+  }, selection);
+  await formatting.getByRole('button', { name: '굵게', exact: true }).click();
+  await expect(markdown).toBeFocused();
+  await expect(markdown).toHaveValue(source.replace(selection, `**${selection}**`));
+  await markdown.press('ControlOrMeta+z');
   await expect(markdown).toHaveValue(source);
   const guide = page.locator('summary').filter({ hasText: '편집 안내' });
   const autosaveHelp = page.getByText(
@@ -214,7 +229,6 @@ test('Work OWNER workflow, member visibility, autosave recovery, conflict and ac
     await page.evaluate(() => window.document.documentElement.scrollWidth <= window.innerWidth),
   ).toBe(true);
   await expect(markdown).toHaveCSS('white-space', 'pre-wrap');
-  await expect(markdown).toHaveCSS('overflow-x', 'hidden');
   expect(await markdown.evaluate((area) => area.scrollWidth <= area.clientWidth)).toBe(true);
   const mobileEditorAudit = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa'])

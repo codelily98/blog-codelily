@@ -642,7 +642,10 @@ test('OWNER: category → Markdown Post → publish → member comment → About
   await page.getByRole('button', { name: '저장', exact: true }).click();
   await expect(page.getByText('카테고리를 저장했습니다.')).toBeVisible();
   await page.goto('/manage/posts/new');
+  await expect(page.getByRole('heading', { name: '새 글 작성', level: 1 })).toBeVisible();
+  await expect(page.getByRole('navigation', { name: '관리 메뉴' })).toHaveCount(0);
   await page.getByRole('textbox', { name: '제목', exact: true }).fill('E2E Markdown 게시글');
+  await expect(page.getByLabel('원본 형식', { exact: true })).toHaveValue('MARKDOWN');
   await page.getByRole('textbox', { name: '글 주소', exact: true }).fill('e2e-markdown-post');
   await page.getByLabel('카테고리', { exact: true }).selectOption({ label: 'E2E 카테고리' });
   await page.getByLabel('원본 형식', { exact: true }).selectOption('MARKDOWN');
@@ -655,6 +658,8 @@ test('OWNER: category → Markdown Post → publish → member comment → About
   );
   const editorAudit = await new AxeBuilder({ page })
     .include('.editor-shell')
+    .include('#post-body-heading')
+    .include('#post-settings-heading')
     .withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa'])
     .analyze();
   expect(editorAudit.violations).toEqual([]);

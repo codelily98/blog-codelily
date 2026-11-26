@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useId, useRef, useState } from 'react';
 import type { ContentFormat } from '@codelily/content';
+import { MarkdownEditor } from './markdown-editor';
 import 'suneditor/css/editor';
 import 'suneditor/css/contents';
 
@@ -16,6 +17,22 @@ export function ContentEditor({
   format: ContentFormat;
   label?: string;
   markdownOnly?: boolean;
+}) {
+  return format === 'MARKDOWN' || markdownOnly ? (
+    <MarkdownEditor value={value} onChange={onChange} label={label} />
+  ) : (
+    <HtmlEditor value={value} onChange={onChange} label={label} />
+  );
+}
+
+function HtmlEditor({
+  value,
+  onChange,
+  label,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  label: string;
 }) {
   const host = useRef<HTMLDivElement>(null);
   const target = useRef<HTMLDivElement>(null);
@@ -43,35 +60,16 @@ export function ContentEditor({
           const instance = editor.current;
           if (!instance) return;
           const frame = instance.$.frameContext;
-          let next: string;
-          if (markdownOnly) {
-            next = frame.get('markdown').value;
-          } else if (frame.get('isCodeView')) {
-            const html = frame.get('code').value;
-            next =
-              format === 'HTML'
-                ? html
-                : module.helper.markdown.jsonToMarkdown(module.helper.converter.htmlToJson(html));
-          } else if (frame.get('isMarkdownView')) {
-            const markdown = frame.get('markdown').value;
-            next =
-              format === 'MARKDOWN' ? markdown : module.helper.markdown.markdownToHtml(markdown);
-          } else if (format === 'MARKDOWN')
-            next = module.helper.markdown.jsonToMarkdown(instance.$.html.getJson());
-          else next = String(instance.$.html.get());
+          const next = frame.get('isCodeView')
+            ? frame.get('code').value
+            : String(instance.$.html.get());
           current.current = next;
           change.current(next);
         };
-        const initial = markdownOnly
-          ? ''
-          : format === 'MARKDOWN'
-            ? module.helper.markdown.markdownToHtml(current.current)
-            : current.current;
         const instance = module.default.create(target.current, {
-          value: initial,
+          value: current.current,
           iframe: false,
-          height: 400,
-          statusbar: !markdownOnly,
+          height: 432,
           lang: language.default as never,
           plugins: [
             plugins.fontColor,
@@ -89,7 +87,7 @@ export function ContentEditor({
             ['bold', 'italic', 'underline', 'strike'],
             ['fontSize', 'fontColor', 'backgroundColor'],
             ['align', 'list', 'blockquote', 'codeBlock', 'table', 'link'],
-            ['codeView', 'markdownView'],
+            ['codeView'],
           ],
           events: {
             onload: ({ $ }) => {
@@ -97,17 +95,6 @@ export function ContentEditor({
               $.frameContext.get('wysiwyg').setAttribute('aria-label', label);
               $.frameContext.get('wysiwyg').setAttribute('role', 'textbox');
               $.frameContext.get('wysiwyg').setAttribute('aria-multiline', 'true');
-              if (format === 'MARKDOWN') {
-                $.viewer.markdownView(true);
-                $.frameContext.get('markdown').value = current.current;
-              }
-              if (markdownOnly) {
-                // Keep the vendor source surface while preventing HTML round trips.
-                $.frameContext.get('markdown').wrap = 'soft';
-                host.current
-                  ?.querySelector<HTMLElement>('.se-toolbar')
-                  ?.style.setProperty('display', 'none', 'important');
-              }
               const areas = host.current?.querySelectorAll('textarea') || [];
               areas.forEach((area) => {
                 area.setAttribute('aria-label', `${label} 원본`);
@@ -131,7 +118,6 @@ export function ContentEditor({
                   undo: '실행 취소',
                   redo: '다시 실행',
                   codeView: 'HTML 원본 보기',
-                  markdownView: 'Markdown 보기',
                   blockquote: '인용문',
                 };
                 host.current
@@ -168,28 +154,25 @@ export function ContentEditor({
       editor.current = null;
       if (target.current) target.current.innerHTML = '';
     };
-  }, [format, label, markdownOnly]);
+  }, [label]);
   useEffect(() => {
     if (value === current.current) return;
     current.current = value;
     if (!editor.current) return;
-    if (format === 'MARKDOWN' && editor.current.$.frameContext.get('isMarkdownView'))
-      editor.current.$.frameContext.get('markdown').value = value;
-    else if (format === 'HTML') editor.current.$.html.set(value);
-  }, [value, format]);
+    const frame = editor.current.$.frameContext;
+    if (frame.get('isCodeView')) frame.get('code').value = value;
+    else editor.current.$.html.set(value);
+  }, [value]);
   return (
     <div
       className="editor-shell"
       ref={host}
-      data-markdown-only={markdownOnly || undefined}
-      aria-describedby={markdownOnly ? undefined : `${id}-help`}
+      data-editor-format="html"
+      aria-describedby={`${id}-help`}
     >
-      {markdownOnly ? null : (
-        <p id={`${id}-help`} className="mb-3 text-xs leading-5 text-muted">
-          HTML 서식·소스와 Markdown 보기를 지원합니다. 표와 코드 블록을 사용할 수 있습니다. 이미지는
-          아래 R2 업로드를 이용해주세요.
-        </p>
-      )}
+      <p id={`${id}-help`} className="mb-3 text-xs leading-5 text-muted">
+        서식 도구와 HTML 원본 보기를 사용할 수 있습니다.
+      </p>
       {!ready && !error ? (
         <p role="status" className="py-3 text-sm text-muted">
           편집기 불러오는 중…

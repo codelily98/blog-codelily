@@ -73,6 +73,8 @@ sudo docker compose --env-file infra/.env -f infra/compose.production.yml exec -
 
 ## 실제 로그인·업로드 인수
 
+편집기 재인수에서 HTML을 확인할 때는 새 글의 빈 본문에서 **원본 형식 → HTML · 서식 편집**을 선택한다. 새 글의 기본 형식은 Markdown이다.
+
 - [x] 운영 브라우저에서 Google 로그인 → 의도한 Google 계정 선택 → callback 복귀를 확인한다. 비밀번호/2단계 인증은 사용자가 직접 수행한다. 계정 동의 화면의 범위를 확인하며 예상 외 권한은 승인하지 않는다.
 - [x] 서버의 현재 DB 역할을 반영하는 `/api/me`와 `/manage`로 최초 사용자의 OWNER 권한을 확인한다. 이름·이메일·계정 ID·쿠키·OAuth code/state/token은 검증 기록에 남기지 않는다. 역할이 다르면 allowlist/검증 이메일 원인을 확인하며 DB 역할을 임의 상승시키지 않는다.
 - [x] `/manage/posts/new`에 식별 가능한 인수용 글을 **초안**으로 작성한다. 공개 글로 자동 발행하지 않는다. HTML 서식·소스 보기와 저장 후 재열기를 확인한다.
